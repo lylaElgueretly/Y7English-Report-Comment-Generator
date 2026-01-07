@@ -153,4 +153,18 @@ with st.form(key='student_form'):
 # Display generated comments
 if st.session_state.students:
     st.subheader("Generated Comments")
-    for i, s in enumerate(st.session_state.students, s_
+    for i, s in enumerate(st.session_state.students, start=1):
+        st.markdown(f"**{i}. {s['name']}**")
+        st.write(s['comment'])
+        st.caption(f"Character count (including spaces): {s['count']} / {MAX_CHARS}")
+
+    # Download button
+    buffer = create_word_download(st.session_state.students)
+    st.download_button(
+        label="Download All Comments as Word",
+        data=buffer,
+        file_name="report_comments.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+st.info("Add a student and generate the comment. Repeat to add multiple students. Comments are truncated per section to fit 490 characters.")
