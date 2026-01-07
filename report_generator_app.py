@@ -1,6 +1,7 @@
 # =========================================
 # STAGE 7 ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
 # Multiple Student Entries & Combined Download
+# Attitude target included in the paragraph
 # =========================================
 
 import random
@@ -99,22 +100,6 @@ writing_target_bank = {
     35: "Start by sequencing events and describing one action per sentence."
 }
 
-homework_bank = {
-    90: "Maintain excellent homework habits consistently.",
-    80: "Complete homework thoughtfully most of the time.",
-    70: "Complete homework sometimes without full effort.",
-    60: "Complete homework but without consistent effort.",
-    50: "Homework not consistently completed."
-}
-
-classwork_bank = {
-    90: "Engage consistently and follow instructions effectively in classwork.",
-    80: "Complete classwork thoughtfully most of the time.",
-    70: "Complete classwork sometimes without full effort.",
-    60: "Complete classwork but without consistent effort.",
-    50: "Classwork not consistently completed."
-}
-
 closer_bank = [
     "Overall, progress was evident over the course of the term.",
     "With continued support, further progress is expected next term.",
@@ -152,29 +137,25 @@ def lowercase_first(text):
 def strip_trailing_punct(text):
     return text.rstrip(". ,;")
 
-def generate_comment(name, att, read, write, read_t, write_t, hw, cw, pronouns, max_chars=490):
+def generate_comment(name, att, read, write, read_t, write_t, att_target, pronouns, max_chars=490):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
     attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
     reading_sentence = f"In reading, {p} {reading_bank[read]}."
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
+    attitude_target_sentence = f"{p} should {lowercase_first(strip_trailing_punct(attitude_target_bank[att_target]))}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_target_bank[read_t]))}."
     writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_target_bank[write_t]))}."
-    
-    homework_sentence = f"{p} should {lowercase_first(hw)}." if hw else ""
-    classwork_sentence = f"{p} should {lowercase_first(cw)}." if cw else ""
-
     closer_sentence = closer_bank[0]
 
     comment = " ".join([
         attitude_sentence,
         reading_sentence,
         writing_sentence,
+        attitude_target_sentence,
         reading_target_sentence,
         writing_target_sentence,
-        homework_sentence,
-        classwork_sentence,
         closer_sentence
     ])
 
@@ -198,12 +179,11 @@ with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
     att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40])
+    att_target = st.selectbox("Attitude target band", [90,85,80,75,70,65,60,55,40])
     read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40])
     write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
     read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
-    hw_level = st.selectbox("Homework effort level", list(homework_bank.keys()))
-    cw_level = st.selectbox("Classwork effort level", list(classwork_bank.keys()))
     
     submitted = st.form_submit_button("Add Student Entry")
 
@@ -211,10 +191,7 @@ with st.form("report_form"):
 if submitted and name:
     pronouns = get_pronouns(gender)
     comment, count = generate_comment(
-        name, att, read, write, read_t, write_t,
-        homework_bank[hw_level],
-        classwork_bank[cw_level],
-        pronouns
+        name, att, read, write, read_t, write_t, att_target, pronouns
     )
     st.session_state.entries.append((name, comment))
     st.success(f"Entry added for {name} (total entries: {len(st.session_state.entries)})")
