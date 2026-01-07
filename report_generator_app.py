@@ -1,11 +1,9 @@
 # =========================================
-# STAGE 7 ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
-# Multiple entries + Word/Excel download
+# ENGLISH REPORT COMMENT GENERATOR
 # =========================================
 
 import random
 import streamlit as st
-import pandas as pd
 from docx import Document
 
 MAX_CHARS = 490
@@ -16,8 +14,7 @@ opening_phrases = [
     "Over the course of this term,",
     "During this term,",
     "Throughout this term,",
-    "In this term,",
-    "Over the past term,"
+    "In this term,"
 ]
 
 # ---------- ACHIEVEMENT BANKS ----------
@@ -60,48 +57,7 @@ writing_bank = {
     0:  "required significant support to form sentences in writing"
 }
 
-reading_target_bank = {
-    90: "Explore subtler inferences and interpret multiple perspectives to deepen analysis.",
-    85: "Extend inference skills and examine alternative interpretations.",
-    80: "Focus on recognising subtler implications and supporting ideas with evidence.",
-    75: "Practice identifying hidden meanings and making connections within the text.",
-    70: "Work on identifying implied ideas and summarising main points.",
-    65: "Focus on reading for meaning and noting key details.",
-    60: "Strengthen comprehension by paraphrasing and asking questions about the text.",
-    55: "Build vocabulary and re-read to clarify meaning.",
-    40: "Identify key events and main points with guided support.",
-    35: "Begin with guided reading and discussion to identify basic ideas."
-}
-
-writing_target_bank = {
-    90: "Experiment with subtle suspense, varied perspectives, and advanced sensory effects.",
-    85: "Refine vocabulary and explore more varied sentence structures for impact.",
-    80: "Focus on precise sensory words and 'showing' character emotions.",
-    75: "Add more sensory details and actions that reveal character traits.",
-    70: "Replace 'telling' statements with descriptive or action-based sentences.",
-    65: "Include adjectives, vivid verbs, and sensory details to enhance imagery.",
-    60: "Focus on including at least one sensory detail per paragraph.",
-    55: "Use sentence starters and story maps to add detail.",
-    40: "Begin with simple sentences describing events and character feelings.",
-    35: "Start by sequencing events and describing one action per sentence."
-}
-
 # ---------- HELPERS ----------
-def get_band(value):
-    try:
-        band = int(value)
-        return band if band in attitude_bank else 0
-    except:
-        return 0
-
-def truncate_comment(comment, max_chars=490):
-    if len(comment) <= max_chars:
-        return comment
-    truncated = comment[:max_chars].rstrip(" ,;.")
-    if "." in truncated:
-        truncated = truncated[:truncated.rfind(".")+1]
-    return truncated
-
 def get_pronouns(gender):
     gender = gender.lower()
     if gender == "male":
@@ -117,16 +73,23 @@ def lowercase_first(text):
 def strip_trailing_punct(text):
     return text.rstrip(". ,;")
 
-# ---------- GENERATE COMMENT ----------
-def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=MAX_CHARS):
-    p, _ = get_pronouns(gender)
+def truncate_comment(comment, max_chars=MAX_CHARS):
+    if len(comment) <= max_chars:
+        return comment
+    truncated = comment[:max_chars].rstrip(" ,;.")
+    if "." in truncated:
+        truncated = truncated[:truncated.rfind(".")+1]
+    return truncated
+
+def generate_comment(name, att, read, write, read_next, write_next, pronouns):
+    p, _ = pronouns
     opening = random.choice(opening_phrases)
 
     attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
     reading_sentence = f"In reading, {p} {reading_bank[read]}."
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
-    reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_target_bank[read_t]))}."
-    writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_target_bank[write_t]))}."
+    reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_bank[read_next]))}."
+    writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_bank[write_next]))}."
 
     comment = " ".join([
         attitude_sentence,
@@ -135,15 +98,19 @@ def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=
         reading_target_sentence,
         writing_target_sentence
     ])
-    comment = truncate_comment(comment, max_chars)
+
+    comment = truncate_comment(comment)
     return comment, len(comment)
 
-# ---------- STREAMLIT APP ----------
-st.title("English Report Comment Generator (Positive, Curriculum-Aligned)")
+# =========================================
+# STREAMLIT APP
+# =========================================
+st.title("English Report Comment Generator")
+st.markdown("Fill in the student details and click **Generate Comment**. You can generate multiple entries and download the report as a Word file.")
 
-# Initialize session state for multiple entries
-if 'students' not in st.session_state:
-    st.session_state['students'] = []
+# Store entries
+if "entries" not in st.session_state:
+    st.session_state.entries = []
 
 # ---------- FORM ----------
 with st.form("report_form"):
@@ -152,48 +119,38 @@ with st.form("report_form"):
     att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
     read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
     write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
-    read_t = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
-    write_t = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
-    
+    read_next = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
+    write_next = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
+
     submitted = st.form_submit_button("Generate Comment")
 
-# ---------- DISPLAY COMMENT ----------
+# ---------- PROCESS ----------
 if submitted and name:
-    comment, char_count = generate_comment(name, att, read, write, read_t, write_t, gender)
+    pronouns = get_pronouns(gender)
+    comment, char_count = generate_comment(name, att, read, write, read_next, write_next, pronouns)
     
-    st.text_area("Generated Comment", comment, height=200)
+    st.text_area("Generated Comment", value=comment, height=200)
     st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
-    
-    # Add to session
-    st.session_state['students'].append({
+
+    # Add to entries
+    st.session_state.entries.append({
         "Name": name,
         "Comment": comment,
         "Characters": char_count
     })
 
-# ---------- MULTIPLE ENTRIES BUTTON ----------
-if st.session_state['students']:
-    st.write("---")
-    st.write(f"Entries so far: {len(st.session_state['students'])}")
-    
-    # Word download
+# ---------- SHOW ENTRIES ----------
+if st.session_state.entries:
+    st.subheader(f"Entries so far: {len(st.session_state.entries)}")
+    for i, entry in enumerate(st.session_state.entries, 1):
+        st.write(f"{i}. {entry['Name']} ({entry['Characters']} chars)")
+
+# ---------- DOWNLOAD WORD FILE ----------
+if st.session_state.entries:
     doc = Document()
-    for s in st.session_state['students']:
-        doc.add_paragraph(f"{s['Name']}: {s['Comment']}")
-    doc_name = "report_comments.docx"
-    doc.save(doc_name)
-    with open(doc_name, "rb") as f:
-        st.download_button("Download All Comments as Word", f, file_name=doc_name,
-                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    
-    # Excel download
-    df = pd.DataFrame(st.session_state['students'])
-    excel_name = "report_comments.xlsx"
-    with pd.ExcelWriter(excel_name, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name="Comments")
-    with open(excel_name, "rb") as f:
-        st.download_button("Download All Comments as Excel", f, file_name=excel_name,
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    
-    if st.button("Add Another Student"):
-        st.experimental_rerun()
+    for entry in st.session_state.entries:
+        doc.add_paragraph(f"{entry['Name']}:\n{entry['Comment']}\n")
+    word_name = "English_Report.docx"
+    doc.save(word_name)
+    with open(word_name, "rb") as f:
+        st.download_button("Download Word Report", data=f, file_name=word_name, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
