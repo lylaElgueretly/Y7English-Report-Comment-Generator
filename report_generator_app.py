@@ -1,17 +1,25 @@
 import streamlit as st
 import random
 from docx import Document
-from io import BytesIO
 
-# =========================================
-# ENGLISH REPORT COMMENT GENERATOR
-# Preserved sentence banks (verbatim)
-# Multiple entries | ≤490 chars | Word export
-# =========================================
-
+# =====================
+# CONFIG
+# =====================
 MAX_CHARS = 490
 
-# ---------- OPENING PHRASES ----------
+st.set_page_config(page_title="English Report Comment Generator", layout="centered")
+st.title("English Report Comment Generator")
+
+# =====================
+# SESSION STATE
+# =====================
+if "comments" not in st.session_state:
+    st.session_state.comments = []
+
+# =====================
+# BANKS (UNCHANGED)
+# =====================
+
 opening_phrases = [
     "This term,",
     "Over the course of this term,",
@@ -21,7 +29,6 @@ opening_phrases = [
     "Over the past term,"
 ]
 
-# ---------- ATTITUDE ----------
 attitude_bank = {
     90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
     85: "demonstrated a highly positive and motivated attitude towards learning",
@@ -35,7 +42,6 @@ attitude_bank = {
     0:  "required significant support to engage confidently in learning"
 }
 
-# ---------- READING ACHIEVEMENT ----------
 reading_bank = {
     90: "understanding texts and making insightful interpretations",
     85: "understanding texts confidently and making strong interpretations",
@@ -49,7 +55,6 @@ reading_bank = {
     0:  "recognising familiar words but needing significant support to understand texts"
 }
 
-# ---------- WRITING ACHIEVEMENT ----------
 writing_bank = {
     90: "expressing ideas clearly using varied vocabulary and sentence structures",
     85: "writing confidently using varied sentences and well-chosen vocabulary",
@@ -63,7 +68,6 @@ writing_bank = {
     0:  "requiring significant support to form sentences in writing"
 }
 
-# ---------- READING TARGET ----------
 reading_target_bank = {
     90: "continue analysing texts in greater depth",
     85: "develop more detailed responses to texts",
@@ -77,7 +81,6 @@ reading_target_bank = {
     0:  "build confidence in recognising basic words and ideas"
 }
 
-# ---------- WRITING TARGET ----------
 writing_target_bank = {
     90: "refine accuracy further and experiment with more complex structures",
     85: "develop more sophisticated vocabulary and sentence variety",
@@ -91,55 +94,40 @@ writing_target_bank = {
     0:  "build confidence in writing through regular guided practice"
 }
 
-# ---------- HELPERS ----------
-def get_band(value):
-    try:
-        value = int(value)
-        return value if value in attitude_bank else 0
-    except:
-        return 0
+# =====================
+# HELPERS
+# =====================
 
-def truncate_comment(text, max_chars):
+def safe_truncate(text, max_chars):
     if len(text) <= max_chars:
         return text
     return text[:max_chars].rsplit(" ", 1)[0]
 
-def get_pronouns(gender):
-    if gender == "Female":
-        return "she", "her"
-    return "he", "his"
-
 def generate_comment(name, gender, att, read, write, read_t, write_t):
-    p, poss = get_pronouns(gender)
+    p = "he" if gender == "Male" else "she"
+
     opening = random.choice(opening_phrases)
 
-    reading_phrase = (
-        f"demonstrated {reading_bank[read]}"
-        if read >= 75 else f"experienced difficulty {reading_bank[read]}"
-    )
-    writing_phrase = (
-        f"demonstrated {writing_bank[write]}"
-        if write >= 75 else f"experienced difficulty {writing_bank[write]}"
-    )
+    reading_phrase = f"demonstrated {reading_bank[read]}"
+    writing_phrase = f"demonstrated {writing_bank[write]}"
 
     comment = (
         f"{opening} {name} {attitude_bank[att]}. "
-        f"{p.capitalize()} {reading_phrase} and {writing_phrase}, "
-        f"which reflected {poss} current level of confidence. "
-        f"Next term, {p} should {reading_target_bank[read_t]}, "
+        f"{p.capitalize()} {reading_phrase} and {writing_phrase}. "
+        f"For the next term, {p} should {reading_target_bank[read_t]} and "
         f"{writing_target_bank[write_t]}."
     )
 
-    comment = truncate_comment(comment, MAX_CHARS)
+    comment = safe_truncate(comment, MAX_CHARS)
     return comment, len(comment)
 
-# ---------- STREAMLIT UI ----------
-st.title("English Report Comment Generator")
+# =====================
+# INPUTS
+# =====================
 
-if "entries" not in st.session_state:
-    st.session_state.entries = []
+st.subheader("Student details")
 
-name = st.text_input("Student Name")
+name = st.text_input("Student name")
 gender = st.selectbox("Gender", ["Male", "Female"])
 
 att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
@@ -148,30 +136,56 @@ write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=Tru
 read_t = st.selectbox("Next Steps – Reading", sorted(reading_target_bank.keys(), reverse=True))
 write_t = st.selectbox("Next Steps – Writing", sorted(writing_target_bank.keys(), reverse=True))
 
-if st.button("Generate Comment"):
-    if name:
-        comment, count = generate_comment(name, gender, att, read, write, read_t, write_t)
-        st.session_state.entries.append((name, comment, count))
+# =====================
+# GENERATE BUTTON
+# =====================
 
-if st.session_state.entries:
-    st.subheader("Generated Comments")
-    for i, (n, c, cnt) in enumerate(st.session_state.entries, 1):
-        st.markdown(f"**{i}. {n}**")
-        st.write(c)
-        st.caption(f"Character count (including spaces): {cnt} / {MAX_CHARS}")
-
-    if st.button("Download as Word"):
-        doc = Document()
-        for n, c, _ in st.session_state.entries:
-            doc.add_paragraph(f"{n}\n{c}\n")
-
-        buffer = BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-
-        st.download_button(
-            label="Download Word File",
-            data=buffer,
-            file_name="English_Report_Comments.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+if st.button("Generate comment"):
+    if name.strip():
+        comment, count = generate_comment(
+            name, gender, att, read, write, read_t, write_t
         )
+
+        st.session_state.comments.append({
+            "name": name,
+            "comment": comment,
+            "chars": count
+        })
+    else:
+        st.warning("Please enter a student name.")
+
+# =====================
+# DISPLAY COMMENTS
+# =====================
+
+if st.session_state.comments:
+    st.markdown("### Generated comments")
+
+    for i, entry in enumerate(st.session_state.comments, start=1):
+        st.markdown(f"**{i}. {entry['name']}**")
+        st.write(entry["comment"])
+        st.caption(f"Character count (including spaces): {entry['chars']} / {MAX_CHARS}")
+        st.markdown("---")
+
+# =====================
+# DOWNLOAD WORD FILE
+# =====================
+
+if st.session_state.comments:
+    if st.button("Download all comments (Word)"):
+        doc = Document()
+        doc.add_heading("English Report Comments", level=1)
+
+        for entry in st.session_state.comments:
+            doc.add_paragraph(f"{entry['name']}:\n{entry['comment']}\n")
+
+        file_name = "English_Report_Comments.docx"
+        doc.save(file_name)
+
+        with open(file_name, "rb") as f:
+            st.download_button(
+                label="Click to download Word file",
+                data=f,
+                file_name=file_name,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
