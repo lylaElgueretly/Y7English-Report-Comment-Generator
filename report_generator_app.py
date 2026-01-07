@@ -1,133 +1,107 @@
-# =========================================
-# STAGE 7 ENGLISH REPORT COMMENT GENERATOR
-# Pedagogically sound, full sentences, multi-student
-# =========================================
-
+# report_generator_app.py
 import streamlit as st
 from docx import Document
 import random
 
-st.set_page_config(page_title="Y7 English Report Comment Generator", layout="wide")
+MAX_CHARS = 490
 
-# ----------------------
-# BANKS OF STATEMENTS
-# ----------------------
+st.set_page_config(page_title="English Report Comment Generator", layout="centered")
 
-# Attitude to Learning
+# ------------------ BANKS ------------------
+# Attitude to Learning (achieved)
 attitude_bank = {
     90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
-    85: "showed consistent effort and engaged well in class activities",
+    85: "showed a strong attitude to learning; usually focused, motivated, and participates actively",
     80: "had a positive attitude to learning; generally attentive and willing to contribute",
-    75: "showed good effort; usually completes tasks on time and participates in class",
-    70: "displayed satisfactory engagement; completes tasks with support",
-    65: "demonstrated a developing attitude; sometimes attentive with prompting",
-    60: "showed limited focus; requires regular reminders",
-    55: "was inconsistent in attention; frequently distracted or passive",
-    40: "showed minimal engagement in learning activities",
-    35: "rarely demonstrated focus or motivation"
+    75: "showed a good attitude to learning; usually completes tasks on time and engages in class activities",
+    70: "displays a satisfactory attitude; completes tasks with support and engages occasionally",
+    65: "demonstrated a developing attitude; sometimes attentive and completes tasks with prompting",
+    60: "shows a limited attitude; needs regular prompting and reminders to stay on task",
+    55: "attitude to learning is inconsistent; frequently distracted or passive in class",
+    40: "shows minimal engagement in learning activities",
+    35: "rarely demonstrates focus or motivation in learning"
 }
 
-attitude_next_bank = {
-    90: "Continue challenging themselves and leading by example in group tasks.",
-    85: "Maintain engagement and seek opportunities to extend learning independently.",
-    80: "Increase participation in discussions and take more initiative in independent tasks.",
-    75: "Focus on asking questions to deepen understanding and improve consistency.",
-    70: "Work on increasing focus and taking a more active role in lessons.",
-    65: "Aim to engage more consistently and take responsibility for independent learning.",
-    60: "Develop personal organisation and focus; try to contribute more during lessons.",
-    55: "Focus on staying engaged and completing tasks on time with support.",
-    40: "Begin by setting small targets to complete tasks and participate in lessons.",
-    35: "Work on basic engagement skills, starting with short, achievable tasks and participation."
-}
-
-# Reading
+# Reading Achieved
 reading_bank = {
-    90: "demonstrates excellent understanding of explicit and implicit ideas in texts",
-    85: "shows strong understanding of explicit and some implicit ideas",
-    80: "understands main ideas and some supporting details",
-    75: "shows good understanding of main ideas with occasional inference",
-    70: "understands basic ideas; limited inference",
-    65: "identifies a few ideas with minimal inference",
-    60: "recognises simple ideas",
-    55: "understands very basic ideas",
-    40: "struggles to identify ideas",
-    35: "minimal comprehension of texts"
+    90: "understood texts and made insightful interpretations",
+    85: "understood texts confidently and made strong interpretations",
+    80: "understood main ideas and some supporting details",
+    75: "understood main ideas with occasional inference",
+    70: "understood basic ideas; limited inference",
+    65: "identified a few ideas with minimal inference",
+    60: "recognised simple ideas",
+    55: "understood very basic ideas",
+    40: "struggled to identify ideas",
+    35: "had minimal comprehension of texts"
 }
 
-reading_next_bank = {
-    90: "Explore subtler inferences and interpret multiple perspectives to deepen analysis.",
-    85: "Extend inference skills and examine alternative interpretations.",
-    80: "Focus on recognising subtler implications and supporting ideas with evidence.",
-    75: "Practice identifying hidden meanings and making connections within the text.",
-    70: "Work on identifying implied ideas and summarising main points.",
-    65: "Focus on reading for meaning and noting key details.",
-    60: "Strengthen comprehension by paraphrasing and asking questions about the text.",
-    55: "Build vocabulary and re-read to clarify meaning.",
-    40: "Identify key events and main points with guided support.",
-    35: "Begin with guided reading and discussion to identify basic ideas."
-}
-
-# Writing
+# Writing Achieved
 writing_bank = {
-    90: "writes highly engaging narratives, showing not telling, with vivid verbs and sensory language",
-    85: "writes engaging narratives with effective descriptive and sensory detail",
-    80: "produces clear narratives using some descriptive and sensory language",
-    75: "writes coherent narratives with occasional description",
-    70: "uses basic description; narrative is simple",
+    90: "wrote highly engaging narratives, showing not telling, with vivid verbs and sensory language",
+    85: "wrote engaging narratives with effective descriptive and sensory detail",
+    80: "produced clear narratives using some descriptive and sensory language",
+    75: "wrote coherent narratives with occasional description",
+    70: "used basic description; narrative is simple",
     65: "narrative is straightforward; limited descriptive detail",
     60: "very basic narrative with minimal description",
     55: "narrative is underdeveloped",
-    40: "struggles to write narratives",
+    40: "struggled to write narratives",
     35: "writing lacks narrative sense"
 }
 
-writing_next_bank = {
-    90: "Experiment with subtle suspense, varied perspectives, and advanced sensory effects.",
-    85: "Refine vocabulary and explore more varied sentence structures for impact.",
-    80: "Focus on precise sensory words and 'showing' character emotions.",
-    75: "Add more sensory details and actions that reveal character traits.",
-    70: "Replace 'telling' statements with descriptive or action-based sentences.",
-    65: "Include adjectives, vivid verbs, and sensory details to enhance imagery.",
-    60: "Focus on including at least one sensory detail per paragraph.",
-    55: "Use sentence starters and story maps to add detail.",
-    40: "Begin with simple sentences describing events and character feelings.",
-    35: "Start by sequencing events and describing one action per sentence."
+# Next Steps Reading
+reading_target_bank = {
+    90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
+    85: "extend inference skills and examine alternative interpretations",
+    80: "focus on recognising subtler implications and supporting ideas with evidence",
+    75: "practice identifying hidden meanings and making connections within the text",
+    70: "work on identifying implied ideas and summarising main points",
+    65: "focus on reading for meaning and noting key details",
+    60: "strengthen comprehension by paraphrasing and asking questions about the text",
+    55: "build vocabulary and re-read to clarify meaning",
+    40: "identify key events and main points with guided support",
+    35: "begin with guided reading and discussion to identify basic ideas"
 }
 
-# ----------------------
-# HELPER FUNCTIONS
-# ----------------------
-def get_pronouns(gender):
-    gender = gender.lower()
-    if gender in ['male', 'm']:
-        return "he", "his"
-    elif gender in ['female', 'f']:
-        return "she", "her"
-    else:
-        return "they", "their"
+# Next Steps Writing
+writing_target_bank = {
+    90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
+    85: "refine vocabulary and explore more varied sentence structures for impact",
+    80: "focus on precise sensory words and 'showing' character emotions",
+    75: "add more sensory details and actions that reveal character traits",
+    70: "replace 'telling' statements with descriptive or action-based sentences",
+    65: "include adjectives, vivid verbs, and sensory details to enhance imagery",
+    60: "focus on including at least one sensory detail per paragraph",
+    55: "use sentence starters and story maps to add detail",
+    40: "begin with simple sentences describing events and character feelings",
+    35: "start by sequencing events and describing one action per sentence"
+}
 
-def truncate_comment(comment, max_chars=490):
-    if len(comment) <= max_chars:
-        return comment
-    else:
-        # Truncate safely at word boundary
-        return comment[:max_chars].rsplit(' ', 1)[0]
+# Opening phrases
+opening_phrases = [
+    "This term,",
+    "Over the course of this term,",
+    "During this term,",
+    "Throughout this term,",
+    "In this term,"
+]
 
-def generate_comment(name, gender, att, read, write, att_next, read_next, write_next):
-    p, poss = get_pronouns(gender)
-    # Build comment in sections
+# ------------------ HELPERS ------------------
+def generate_comment(name, att, read, write, read_t, write_t):
+    opening = random.choice(opening_phrases)
     comment = (
-        f"In this term, {name} {attitude_bank[att]}. "
-        f"In reading, {p} {reading_bank[read]}. "
-        f"In writing, {p} {writing_bank[write]}. "
-        f"For the next term, {p} should {reading_next_bank[read_next]} "
-        f"In addition, {p} should {writing_next_bank[write_next]}"
+        f"{opening} {name} {attitude_bank[att]}. "
+        f"In reading, {name.lower()} {reading_bank[read]}. "
+        f"In writing, {name.lower()} {writing_bank[write]}. "
+        f"For the next term, {name.lower()} should {reading_target_bank[read_t]}. "
+        f"In addition, {name.lower()} should {writing_target_bank[write_t]}."
     )
-    return truncate_comment(comment), len(comment)
+    if len(comment) > MAX_CHARS:
+        comment = comment[:MAX_CHARS].rsplit(' ', 1)[0] + "."
+    return comment, len(comment)
 
-# ----------------------
-# STREAMLIT INTERFACE
-# ----------------------
+# ------------------ STREAMLIT APP ------------------
 st.title("English Report Comment Generator")
 
 students = []
@@ -135,44 +109,39 @@ students = []
 with st.form("student_form"):
     st.subheader("Enter Student Details")
     name = st.text_input("Student Name")
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    att = st.selectbox("Attitude to Learning", list(attitude_bank.keys()), index=0)
-    att_next = st.selectbox("Next Steps - Attitude to Learning", list(attitude_next_bank.keys()), index=0)
+    att = st.selectbox("Attitude to Learning (achieved)", list(attitude_bank.keys()), index=0)
     read = st.selectbox("Reading Achieved", list(reading_bank.keys()), index=0)
-    read_next = st.selectbox("Next Steps - Reading", list(reading_next_bank.keys()), index=0)
     write = st.selectbox("Writing Achieved", list(writing_bank.keys()), index=0)
-    write_next = st.selectbox("Next Steps - Writing", list(writing_next_bank.keys()), index=0)
+    read_t = st.selectbox("Next Steps - Reading", list(reading_target_bank.keys()), index=0)
+    write_t = st.selectbox("Next Steps - Writing", list(writing_target_bank.keys()), index=0)
     
-    submitted = st.form_submit_button("Generate Comment")
+    add_student = st.form_submit_button("Generate Comment for Student")
     
-    if submitted:
-        comment, char_count = generate_comment(
-            name, gender, att, read, write, att_next, read_next, write_next
-        )
-        students.append({"name": name, "comment": comment, "chars": char_count})
-        st.success(f"Comment generated for {name} ({char_count} chars)")
-        
-# ----------------------
-# DISPLAY GENERATED COMMENTS
-# ----------------------
+    if add_student:
+        comment, char_count = generate_comment(name, att, read, write, read_t, write_t)
+        students.append({
+            "name": name,
+            "comment": comment,
+            "char_count": char_count
+        })
+
+# ------------------ DISPLAY COMMENTS ------------------
 if students:
     st.subheader("Generated Comments")
-    for idx, s in enumerate(students, 1):
-        st.markdown(f"**{idx}. {s['name']}**")
-        st.write(s['comment'])
-        st.write(f"Character count (including spaces): {s['chars']} / 490")
+    for i, s in enumerate(students, start=1):
+        st.markdown(f"**{i}. {s['name']}**")
+        st.write(s["comment"])
+        st.write(f"Character count (including spaces): {s['char_count']} / {MAX_CHARS}")
 
-# ----------------------
-# DOWNLOAD COMMENTS AS WORD FILE
-# ----------------------
+# ------------------ DOWNLOAD AS WORD ------------------
 if students:
-    if st.button("Download Comments as Word"):
+    if st.button("Download All Comments as Word"):
         doc = Document()
-        doc.add_heading("Generated Report Comments", 0)
-        for idx, s in enumerate(students, 1):
-            doc.add_paragraph(f"{idx}. {s['name']}")
-            doc.add_paragraph(s['comment'])
-            doc.add_paragraph(f"Character count: {s['chars']} / 490\n")
-        doc.save("report_comments.docx")
-        with open("report_comments.docx", "rb") as file:
-            st.download_button("Download Word file", file, file_name="report_comments.docx")
+        for i, s in enumerate(students, start=1):
+            doc.add_paragraph(f"{i}. {s['name']}")
+            doc.add_paragraph(s["comment"])
+            doc.add_paragraph(f"Character count (including spaces): {s['char_count']} / {MAX_CHARS}")
+            doc.add_paragraph("\n")
+        doc_name = "English_Report_Comments.docx"
+        doc.save(doc_name)
+        st.success(f"Word document saved as {doc_name}. Check your folder or Streamlit downloads.")
