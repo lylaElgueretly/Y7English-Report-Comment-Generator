@@ -1,12 +1,12 @@
 # =========================================
-# ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
-# Multiple students, Word/Excel download, positive version
+# STAGE 7 ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
+# Multiple entries + Word/Excel download
 # =========================================
 
 import random
 import streamlit as st
-from docx import Document
 import pandas as pd
+from docx import Document
 
 MAX_CHARS = 490
 
@@ -86,27 +86,15 @@ writing_target_bank = {
     35: "Start by sequencing events and describing one action per sentence."
 }
 
-closer_bank = [
-    "Overall, progress was evident over the course of the term."
-]
-
 # ---------- HELPERS ----------
-def get_pronouns(gender):
-    gender = gender.lower()
-    if gender == "male":
-        return "he", "his"
-    elif gender == "female":
-        return "she", "her"
-    else:
-        return "he", "his"
+def get_band(value):
+    try:
+        band = int(value)
+        return band if band in attitude_bank else 0
+    except:
+        return 0
 
-def lowercase_first(text):
-    return text[0].lower() + text[1:] if text else ""
-
-def strip_trailing_punct(text):
-    return text.rstrip(". ,;")
-
-def truncate_comment(comment, max_chars=MAX_CHARS):
+def truncate_comment(comment, max_chars=490):
     if len(comment) <= max_chars:
         return comment
     truncated = comment[:max_chars].rstrip(" ,;.")
@@ -114,6 +102,22 @@ def truncate_comment(comment, max_chars=MAX_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
+def get_pronouns(gender):
+    gender = gender.lower()
+    if gender == "male":
+        return "he", "his"
+    elif gender == "female":
+        return "she", "her"
+    else:
+        return "they", "their"
+
+def lowercase_first(text):
+    return text[0].lower() + text[1:] if text else ""
+
+def strip_trailing_punct(text):
+    return text.rstrip(". ,;")
+
+# ---------- GENERATE COMMENT ----------
 def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=MAX_CHARS):
     p, _ = get_pronouns(gender)
     opening = random.choice(opening_phrases)
@@ -123,27 +127,21 @@ def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_target_bank[read_t]))}."
     writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_target_bank[write_t]))}."
-    closer_sentence = closer_bank[0]
 
     comment = " ".join([
         attitude_sentence,
         reading_sentence,
         writing_sentence,
         reading_target_sentence,
-        writing_target_sentence,
-        closer_sentence
+        writing_target_sentence
     ])
     comment = truncate_comment(comment, max_chars)
     return comment, len(comment)
 
-# =========================================
-# STREAMLIT APP
-# =========================================
+# ---------- STREAMLIT APP ----------
+st.title("English Report Comment Generator (Positive, Curriculum-Aligned)")
 
-st.title("English Report Comment Generator (Positive)")
-st.markdown("Generate multiple students' report comments. Character count is shown (max 490).")
-
-# ---------- MULTIPLE STUDENT STORAGE ----------
+# Initialize session state for multiple entries
 if 'students' not in st.session_state:
     st.session_state['students'] = []
 
@@ -151,58 +149,51 @@ if 'students' not in st.session_state:
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
-    att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40])
-    read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40])
-    write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
-    read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
-    write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
+    att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
+    read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
+    write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
+    read_t = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
+    write_t = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
     
     submitted = st.form_submit_button("Generate Comment")
 
-# ---------- GENERATE & STORE COMMENT ----------
+# ---------- DISPLAY COMMENT ----------
 if submitted and name:
-    comment, char_count = generate_comment(
-        name, att, read, write, read_t, write_t, gender
-    )
+    comment, char_count = generate_comment(name, att, read, write, read_t, write_t, gender)
+    
     st.text_area("Generated Comment", comment, height=200)
     st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
     
-    # Store for multiple entries
+    # Add to session
     st.session_state['students'].append({
         "Name": name,
         "Comment": comment,
         "Characters": char_count
     })
 
-# ---------- DISPLAY ALL ENTRIES ----------
+# ---------- MULTIPLE ENTRIES BUTTON ----------
 if st.session_state['students']:
-    st.subheader("All generated comments")
-    for i, s in enumerate(st.session_state['students']):
-        st.write(f"{i+1}. {s['Name']} ({s['Characters']} chars):")
-        st.write(s['Comment'])
+    st.write("---")
+    st.write(f"Entries so far: {len(st.session_state['students'])}")
     
-    # ---------- DOWNLOAD OPTIONS ----------
-    st.markdown("---")
-    st.subheader("Download all comments")
-    
-    # Word
+    # Word download
     doc = Document()
     for s in st.session_state['students']:
-        doc.add_paragraph(f"{s['Name']} ({s['Characters']} chars):")
-        doc.add_paragraph(s['Comment'])
-        doc.add_paragraph("")
+        doc.add_paragraph(f"{s['Name']}: {s['Comment']}")
     doc_name = "report_comments.docx"
-    with open(doc_name, "wb") as f:
-        doc.save(f)
+    doc.save(doc_name)
     with open(doc_name, "rb") as f:
-        st.download_button("Download as Word", f, file_name=doc_name,
+        st.download_button("Download All Comments as Word", f, file_name=doc_name,
                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     
-    # Excel
+    # Excel download
     df = pd.DataFrame(st.session_state['students'])
     excel_name = "report_comments.xlsx"
     with pd.ExcelWriter(excel_name, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False)
+        df.to_excel(writer, index=False, sheet_name="Comments")
     with open(excel_name, "rb") as f:
-        st.download_button("Download as Excel", f, file_name=excel_name,
+        st.download_button("Download All Comments as Excel", f, file_name=excel_name,
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    
+    if st.button("Add Another Student"):
+        st.experimental_rerun()
