@@ -3,12 +3,11 @@ import streamlit as st
 from docx import Document
 import random
 
-MAX_CHARS = 490
+MAX_CHARS = 499
 
 st.set_page_config(page_title="English Report Comment Generator", layout="centered")
 
 # ------------------ BANKS ------------------
-# Attitude to Learning (achieved)
 attitude_bank = {
     90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
     85: "showed a strong attitude to learning; usually focused, motivated, and participates actively",
@@ -22,7 +21,6 @@ attitude_bank = {
     35: "rarely demonstrates focus or motivation in learning"
 }
 
-# Reading Achieved
 reading_bank = {
     90: "understood texts and made insightful interpretations",
     85: "understood texts confidently and made strong interpretations",
@@ -36,7 +34,6 @@ reading_bank = {
     35: "had minimal comprehension of texts"
 }
 
-# Writing Achieved
 writing_bank = {
     90: "wrote highly engaging narratives, showing not telling, with vivid verbs and sensory language",
     85: "wrote engaging narratives with effective descriptive and sensory detail",
@@ -50,7 +47,6 @@ writing_bank = {
     35: "writing lacks narrative sense"
 }
 
-# Next Steps Reading
 reading_target_bank = {
     90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
     85: "extend inference skills and examine alternative interpretations",
@@ -64,7 +60,6 @@ reading_target_bank = {
     35: "begin with guided reading and discussion to identify basic ideas"
 }
 
-# Next Steps Writing
 writing_target_bank = {
     90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
     85: "refine vocabulary and explore more varied sentence structures for impact",
@@ -78,7 +73,6 @@ writing_target_bank = {
     35: "start by sequencing events and describing one action per sentence"
 }
 
-# Opening phrases
 opening_phrases = [
     "This term,",
     "Over the course of this term,",
@@ -104,40 +98,50 @@ def generate_comment(name, att, read, write, read_t, write_t):
 # ------------------ STREAMLIT APP ------------------
 st.title("English Report Comment Generator")
 
-students = []
+# Session state to store multiple students
+if "students" not in st.session_state:
+    st.session_state.students = []
+
+def add_student():
+    comment, char_count = generate_comment(
+        st.session_state.name,
+        st.session_state.att,
+        st.session_state.read,
+        st.session_state.write,
+        st.session_state.read_t,
+        st.session_state.write_t
+    )
+    st.session_state.students.append({
+        "name": st.session_state.name,
+        "comment": comment,
+        "char_count": char_count
+    })
 
 with st.form("student_form"):
     st.subheader("Enter Student Details")
-    name = st.text_input("Student Name")
-    att = st.selectbox("Attitude to Learning (achieved)", list(attitude_bank.keys()), index=0)
-    read = st.selectbox("Reading Achieved", list(reading_bank.keys()), index=0)
-    write = st.selectbox("Writing Achieved", list(writing_bank.keys()), index=0)
-    read_t = st.selectbox("Next Steps - Reading", list(reading_target_bank.keys()), index=0)
-    write_t = st.selectbox("Next Steps - Writing", list(writing_target_bank.keys()), index=0)
-    
-    add_student = st.form_submit_button("Generate Comment for Student")
-    
-    if add_student:
-        comment, char_count = generate_comment(name, att, read, write, read_t, write_t)
-        students.append({
-            "name": name,
-            "comment": comment,
-            "char_count": char_count
-        })
+    st.text_input("Student Name", key="name")
+    st.selectbox("Attitude to Learning (achieved)", list(attitude_bank.keys()), index=0, key="att")
+    st.selectbox("Reading Achieved", list(reading_bank.keys()), index=0, key="read")
+    st.selectbox("Writing Achieved", list(writing_bank.keys()), index=0, key="write")
+    st.selectbox("Next Steps - Reading", list(reading_target_bank.keys()), index=0, key="read_t")
+    st.selectbox("Next Steps - Writing", list(writing_target_bank.keys()), index=0, key="write_t")
+
+    submitted = st.form_submit_button("Generate Comment for Student", on_click=add_student)
 
 # ------------------ DISPLAY COMMENTS ------------------
-if students:
+if st.session_state.students:
     st.subheader("Generated Comments")
-    for i, s in enumerate(students, start=1):
+    for i, s in enumerate(st.session_state.students, start=1):
         st.markdown(f"**{i}. {s['name']}**")
         st.write(s["comment"])
         st.write(f"Character count (including spaces): {s['char_count']} / {MAX_CHARS}")
+        st.write("---")
 
 # ------------------ DOWNLOAD AS WORD ------------------
-if students:
+if st.session_state.students:
     if st.button("Download All Comments as Word"):
         doc = Document()
-        for i, s in enumerate(students, start=1):
+        for i, s in enumerate(st.session_state.students, start=1):
             doc.add_paragraph(f"{i}. {s['name']}")
             doc.add_paragraph(s["comment"])
             doc.add_paragraph(f"Character count (including spaces): {s['char_count']} / {MAX_CHARS}")
