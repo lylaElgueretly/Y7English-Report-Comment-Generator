@@ -161,7 +161,7 @@ def generate_comment(name, att, read, write, read_t, write_t, hw, cw, pronouns, 
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_target_bank[read_t]))}."
     writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_target_bank[write_t]))}."
-
+    
     homework_sentence = f"{p} should {lowercase_first(hw)}." if hw else ""
     classwork_sentence = f"{p} should {lowercase_first(cw)}." if cw else ""
 
@@ -204,7 +204,7 @@ with st.form("report_form"):
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
     hw_level = st.selectbox("Homework effort level", list(homework_bank.keys()))
     cw_level = st.selectbox("Classwork effort level", list(classwork_bank.keys()))
-
+    
     submitted = st.form_submit_button("Add Student Entry")
 
 # ---------- ADD STUDENT ----------
