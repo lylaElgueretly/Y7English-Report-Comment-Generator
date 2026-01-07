@@ -111,7 +111,7 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None, teacher_note=None):
+def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
@@ -121,8 +121,8 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(reading_target_bank[read_t])}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(writing_target_bank[write_t])}."
     
+    # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
-    teacher_note_sentence = f" {teacher_note}" if teacher_note else ""
 
     closer_sentence = random.choice(closer_bank)
 
@@ -132,7 +132,6 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
         writing_sentence,
         reading_target_sentence,
         writing_target_sentence,
-        teacher_note_sentence,
         closer_sentence
     ]
 
@@ -159,16 +158,16 @@ with st.form("report_form"):
     read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
     
-    # Optional fields
+    # Optional attitude next steps
     attitude_target = st.text_input("Optional Attitude Next Steps")
-    teacher_note = st.text_area("Optional Teacher Note (will be appended to comment)")
 
     submitted = st.form_submit_button("Generate Comment")
 
 if submitted and name:
     pronouns = get_pronouns(gender)
-    comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target, teacher_note)
-    
+    comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target)
+    char_count = len(comment)
+
     # Editable comment field
     edited_comment = st.text_area("Generated Comment (editable)", value=comment, height=200)
     st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
@@ -186,6 +185,7 @@ if st.session_state['all_comments']:
         for c in st.session_state['all_comments']:
             doc.add_paragraph(c)
         
+        # Use in-memory BytesIO
         file_stream = io.BytesIO()
         doc.save(file_stream)
         file_stream.seek(0)
