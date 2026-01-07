@@ -1,10 +1,12 @@
 # =========================================
-# STAGE 7 ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
-# Only attitude, reading, writing, and next steps
+# ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
+# Multiple students, Word/Excel download, positive version
 # =========================================
 
 import random
 import streamlit as st
+from docx import Document
+import pandas as pd
 
 MAX_CHARS = 490
 
@@ -89,21 +91,6 @@ closer_bank = [
 ]
 
 # ---------- HELPERS ----------
-def get_band(value):
-    try:
-        band = int(value)
-        return band if band in attitude_bank else 0
-    except:
-        return 0
-
-def truncate_comment(comment, max_chars=490):
-    if len(comment) <= max_chars:
-        return comment
-    truncated = comment[:max_chars].rstrip(" ,;.")
-    if "." in truncated:
-        truncated = truncated[:truncated.rfind(".")+1]
-    return truncated
-
 def get_pronouns(gender):
     gender = gender.lower()
     if gender == "male":
@@ -119,7 +106,15 @@ def lowercase_first(text):
 def strip_trailing_punct(text):
     return text.rstrip(". ,;")
 
-def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=490):
+def truncate_comment(comment, max_chars=MAX_CHARS):
+    if len(comment) <= max_chars:
+        return comment
+    truncated = comment[:max_chars].rstrip(" ,;.")
+    if "." in truncated:
+        truncated = truncated[:truncated.rfind(".")+1]
+    return truncated
+
+def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=MAX_CHARS):
     p, _ = get_pronouns(gender)
     opening = random.choice(opening_phrases)
 
@@ -138,7 +133,6 @@ def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=
         writing_target_sentence,
         closer_sentence
     ])
-
     comment = truncate_comment(comment, max_chars)
     return comment, len(comment)
 
@@ -147,8 +141,11 @@ def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=
 # =========================================
 
 st.title("English Report Comment Generator (Positive)")
+st.markdown("Generate multiple students' report comments. Character count is shown (max 490).")
 
-st.markdown("Generate report comments for a student based on achieved and next steps. Character count is shown after generation.")
+# ---------- MULTIPLE STUDENT STORAGE ----------
+if 'students' not in st.session_state:
+    st.session_state['students'] = []
 
 # ---------- FORM ----------
 with st.form("report_form"):
@@ -162,11 +159,50 @@ with st.form("report_form"):
     
     submitted = st.form_submit_button("Generate Comment")
 
-# ---------- DISPLAY COMMENT ----------
+# ---------- GENERATE & STORE COMMENT ----------
 if submitted and name:
     comment, char_count = generate_comment(
         name, att, read, write, read_t, write_t, gender
     )
-    
     st.text_area("Generated Comment", comment, height=200)
     st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
+    
+    # Store for multiple entries
+    st.session_state['students'].append({
+        "Name": name,
+        "Comment": comment,
+        "Characters": char_count
+    })
+
+# ---------- DISPLAY ALL ENTRIES ----------
+if st.session_state['students']:
+    st.subheader("All generated comments")
+    for i, s in enumerate(st.session_state['students']):
+        st.write(f"{i+1}. {s['Name']} ({s['Characters']} chars):")
+        st.write(s['Comment'])
+    
+    # ---------- DOWNLOAD OPTIONS ----------
+    st.markdown("---")
+    st.subheader("Download all comments")
+    
+    # Word
+    doc = Document()
+    for s in st.session_state['students']:
+        doc.add_paragraph(f"{s['Name']} ({s['Characters']} chars):")
+        doc.add_paragraph(s['Comment'])
+        doc.add_paragraph("")
+    doc_name = "report_comments.docx"
+    with open(doc_name, "wb") as f:
+        doc.save(f)
+    with open(doc_name, "rb") as f:
+        st.download_button("Download as Word", f, file_name=doc_name,
+                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    
+    # Excel
+    df = pd.DataFrame(st.session_state['students'])
+    excel_name = "report_comments.xlsx"
+    with pd.ExcelWriter(excel_name, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False)
+    with open(excel_name, "rb") as f:
+        st.download_button("Download as Excel", f, file_name=excel_name,
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
