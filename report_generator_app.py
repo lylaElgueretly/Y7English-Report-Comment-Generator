@@ -1,6 +1,7 @@
 # =========================================
 # STAGE 7 ENGLISH REPORT COMMENT GENERATOR
-# Pedagogically sound | Curriculum adaptable | AI & Python powered
+# Streamlit version
+# Multiple students | Pedagogically sound | Custom next steps
 # =========================================
 
 import streamlit as st
@@ -8,7 +9,6 @@ import random
 from docx import Document
 from io import BytesIO
 
-# ---------- CONSTANTS ----------
 MAX_CHARS = 490
 
 # ---------- OPENING PHRASES ----------
@@ -17,11 +17,10 @@ opening_phrases = [
     "Over the course of this term,",
     "During this term,",
     "Throughout this term,",
-    "In this term,",
-    "Over the past term,"
+    "In this term,"
 ]
 
-# ---------- ATTITUDE ----------
+# ---------- ATTITUDE TO LEARNING ----------
 attitude_bank = {
     90: "demonstrates an excellent attitude to learning; highly motivated, consistently engaged, and takes initiative in lessons",
     85: "shows a strong attitude to learning; usually focused, motivated, and participates actively",
@@ -35,7 +34,7 @@ attitude_bank = {
     35: "rarely demonstrates focus or motivation in learning"
 }
 
-attitude_next_steps = {
+attitude_next_bank = {
     90: "continue challenging themselves and leading by example in group tasks",
     85: "maintain engagement and seek opportunities to extend learning independently",
     80: "increase participation in discussions and take more initiative in independent tasks",
@@ -48,7 +47,7 @@ attitude_next_steps = {
     35: "work on basic engagement skills, starting with short, achievable tasks and participation"
 }
 
-# ---------- READING ----------
+# ---------- READING BANKS ----------
 reading_bank = {
     90: "demonstrates excellent understanding of explicit and implicit ideas in texts",
     85: "shows strong understanding of explicit and some implicit ideas",
@@ -62,7 +61,7 @@ reading_bank = {
     35: "minimal comprehension of texts"
 }
 
-reading_next_steps = {
+reading_target_bank = {
     90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
     85: "extend inference skills and examine alternative interpretations",
     80: "focus on recognising subtler implications and supporting ideas with evidence",
@@ -75,7 +74,7 @@ reading_next_steps = {
     35: "begin with guided reading and discussion to identify basic ideas"
 }
 
-# ---------- WRITING ----------
+# ---------- WRITING BANKS ----------
 writing_bank = {
     90: "writes highly engaging narratives, showing not telling, with vivid verbs and sensory language",
     85: "writes engaging narratives with effective descriptive and sensory detail",
@@ -89,10 +88,10 @@ writing_bank = {
     35: "writing lacks narrative sense"
 }
 
-writing_next_steps = {
+writing_target_bank = {
     90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
     85: "refine vocabulary and explore more varied sentence structures for impact",
-    80: "focus on precise sensory words and 'showing' character emotions",
+    80: "focus on precise sensory words and showing character emotions",
     75: "add more sensory details and actions that reveal character traits",
     70: "replace 'telling' statements with descriptive or action-based sentences",
     65: "include adjectives, vivid verbs, and sensory details to enhance imagery",
@@ -102,83 +101,78 @@ writing_next_steps = {
     35: "start by sequencing events and describing one action per sentence"
 }
 
-# ---------- HELPERS ----------
-def get_band(value, bank):
-    try:
-        band = int(value)
-        return band if band in bank else 0
-    except:
-        return 0
-
+# ---------- HELPER FUNCTIONS ----------
 def truncate_comment(comment, max_chars=MAX_CHARS):
     if len(comment) <= max_chars:
         return comment
     else:
         return comment[:max_chars].rsplit(' ', 1)[0]
 
-def generate_comment(name, att, read, write):
-    p = "he"  # pronoun; adapt if needed
+def generate_comment(student):
     opening = random.choice(opening_phrases)
-
     comment = (
-        f"{opening} {name} {attitude_bank[att]}. "
-        f"In reading, {name.lower()} {reading_bank[read]}. "
-        f"In writing, {name.lower()} {writing_bank[write]}. "
-        f"For the next term, {p} should {reading_next_steps[read]}. "
-        f"In addition, {p} should {writing_next_steps[write]}."
+        f"{opening} {student['name']} {attitude_bank[student['attitude']]}."
+        f" In reading, {student['name'].lower()} {reading_bank[student['reading_ach']]}."
+        f" In writing, {student['name'].lower()} {writing_bank[student['writing_ach']]}."
+        f" In the future, {student['name'].lower()} should {reading_target_bank[student['reading_next']]}."
+        f" In addition, {student['name'].lower()} should {writing_target_bank[student['writing_next']]}."
     )
-
-    comment = truncate_comment(comment)
-    return comment, len(comment)
+    truncated = truncate_comment(comment)
+    return truncated, len(truncated)
 
 # ---------- STREAMLIT UI ----------
 st.title("English Report Comment Generator")
 
-# Session state for multiple entries
-if "comments" not in st.session_state:
-    st.session_state.comments = []
+if 'students' not in st.session_state:
+    st.session_state.students = []
 
-with st.form("comment_form"):
+with st.form("student_form", clear_on_submit=True):
     name = st.text_input("Student Name")
-    att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
-    read = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
-    write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
+    attitude = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
+    reading_ach = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
+    writing_ach = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
+    reading_next = st.selectbox("Next Steps - Reading", sorted(reading_target_bank.keys(), reverse=True))
+    writing_next = st.selectbox("Next Steps - Writing", sorted(writing_target_bank.keys(), reverse=True))
     
     submitted = st.form_submit_button("Generate Comment")
     
-    if submitted and name:
-        comment, char_count = generate_comment(name, att, read, write)
-        st.session_state.comments.append({
+    if submitted:
+        student = {
             "name": name,
-            "comment": comment,
-            "char_count": char_count
-        })
+            "attitude": attitude,
+            "reading_ach": reading_ach,
+            "writing_ach": writing_ach,
+            "reading_next": reading_next,
+            "writing_next": writing_next
+        }
+        st.session_state.students.append(student)
 
-# Display all generated comments
-if st.session_state.comments:
-    st.subheader("Generated Comments")
-    for idx, entry in enumerate(st.session_state.comments, 1):
-        st.markdown(f"**{idx}. {entry['name']}**")
-        st.write(entry["comment"])
-        st.write(f"Character count (including spaces): {entry['char_count']} / {MAX_CHARS}")
+# ---------- DISPLAY GENERATED COMMENTS ----------
+if st.session_state.students:
+    st.header("Generated Comments")
+    for i, student in enumerate(st.session_state.students, start=1):
+        comment_text, char_count = generate_comment(student)
+        st.markdown(f"**{i}. {student['name']}**")
+        st.write(comment_text)
+        st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
 
-# ---------- DOWNLOAD AS WORD ----------
-if st.session_state.comments:
-    doc = Document()
-    for idx, entry in enumerate(st.session_state.comments, 1):
-        doc.add_paragraph(f"{idx}. {entry['name']}")
-        doc.add_paragraph(entry['comment'])
-        doc.add_paragraph(f"Character count (including spaces): {entry['char_count']} / {MAX_CHARS}")
-        doc.add_paragraph("")  # blank line
-    
-    # Save to BytesIO
-    file_stream = BytesIO()
-    doc.save(file_stream)
-    file_stream.seek(0)
-    
+    # ---------- DOWNLOAD AS WORD ----------
+    def download_word():
+        doc = Document()
+        for student in st.session_state.students:
+            comment_text, _ = generate_comment(student)
+            doc.add_paragraph(f"{student['name']}")
+            doc.add_paragraph(comment_text)
+            doc.add_paragraph("")
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
+
     st.download_button(
-        label="Download All Comments as Word",
-        data=file_stream,
-        file_name="generated_comments.docx",
+        label="Download Comments as Word",
+        data=download_word(),
+        file_name="student_comments.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
