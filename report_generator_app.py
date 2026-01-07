@@ -1,10 +1,13 @@
+import streamlit as st
+import random
+from docx import Document
+from io import BytesIO
+
 # =========================================
 # ENGLISH REPORT COMMENT GENERATOR
+# Preserved sentence banks (verbatim)
+# Multiple entries | ≤490 chars | Word export
 # =========================================
-
-import random
-import streamlit as st
-from docx import Document
 
 MAX_CHARS = 490
 
@@ -14,10 +17,11 @@ opening_phrases = [
     "Over the course of this term,",
     "During this term,",
     "Throughout this term,",
-    "In this term,"
+    "In this term,",
+    "Over the past term,"
 ]
 
-# ---------- ACHIEVEMENT BANKS ----------
+# ---------- ATTITUDE ----------
 attitude_bank = {
     90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
     85: "demonstrated a highly positive and motivated attitude towards learning",
@@ -31,126 +35,143 @@ attitude_bank = {
     0:  "required significant support to engage confidently in learning"
 }
 
+# ---------- READING ACHIEVEMENT ----------
 reading_bank = {
-    90: "understood texts and made insightful interpretations",
-    85: "understood texts confidently and made strong interpretations",
-    80: "understood texts confidently and interpreted key points",
-    75: "understood texts securely and identified key ideas",
-    70: "understood main ideas in texts with some support",
-    65: "identified key points in texts with guidance",
-    60: "showed basic understanding of texts with support",
-    55: "understood simple information in texts",
-    40: "understood texts with support",
-    0:  "recognised familiar words but needed significant support to understand texts"
+    90: "understanding texts and making insightful interpretations",
+    85: "understanding texts confidently and making strong interpretations",
+    80: "understanding texts confidently and interpreting key points",
+    75: "understanding texts securely and identifying key ideas",
+    70: "understanding main ideas in texts with some support",
+    65: "identifying key points in texts with guidance",
+    60: "showing basic understanding of texts with support",
+    55: "understanding simple information in texts",
+    40: "understanding texts with support",
+    0:  "recognising familiar words but needing significant support to understand texts"
 }
 
+# ---------- WRITING ACHIEVEMENT ----------
 writing_bank = {
-    90: "expressed ideas clearly using varied vocabulary and sentence structures",
-    85: "wrote confidently using varied sentences and well-chosen vocabulary",
-    80: "wrote structured pieces with appropriate vocabulary",
-    75: "wrote organised paragraphs with suitable vocabulary",
-    70: "wrote clear sentences and simple paragraphs",
-    65: "wrote simple sentences with some organisation",
-    60: "wrote short sentences with support",
-    55: "structured simple written responses",
-    40: "expressed ideas with support",
-    0:  "required significant support to form sentences in writing"
+    90: "expressing ideas clearly using varied vocabulary and sentence structures",
+    85: "writing confidently using varied sentences and well-chosen vocabulary",
+    80: "writing structured pieces with appropriate vocabulary",
+    75: "writing organised paragraphs with suitable vocabulary",
+    70: "writing clear sentences and simple paragraphs",
+    65: "writing simple sentences with some organisation",
+    60: "writing short sentences with support",
+    55: "structuring simple written responses",
+    40: "expressing ideas with support",
+    0:  "requiring significant support to form sentences in writing"
+}
+
+# ---------- READING TARGET ----------
+reading_target_bank = {
+    90: "continue analysing texts in greater depth",
+    85: "develop more detailed responses to texts",
+    80: "explain ideas in greater detail using evidence",
+    75: "develop more detailed responses with closer reference to the text",
+    70: "build confidence in explaining ideas when reading",
+    65: "focus on identifying and explaining key ideas in texts",
+    60: "practise understanding main ideas in short texts",
+    55: "develop basic reading comprehension skills",
+    40: "practise reading regularly to improve understanding",
+    0:  "build confidence in recognising basic words and ideas"
+}
+
+# ---------- WRITING TARGET ----------
+writing_target_bank = {
+    90: "refine accuracy further and experiment with more complex structures",
+    85: "develop more sophisticated vocabulary and sentence variety",
+    80: "vary sentence structures and develop ideas more fully",
+    75: "expand ideas further and check accuracy carefully",
+    70: "develop ideas in more detail and use a wider range of vocabulary",
+    65: "organise ideas more clearly and write in full sentences",
+    60: "extend written responses beyond short sentences",
+    55: "focus on basic sentence structure and spelling",
+    40: "practise writing simple sentences",
+    0:  "build confidence in writing through regular guided practice"
 }
 
 # ---------- HELPERS ----------
+def get_band(value):
+    try:
+        value = int(value)
+        return value if value in attitude_bank else 0
+    except:
+        return 0
+
+def truncate_comment(text, max_chars):
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars].rsplit(" ", 1)[0]
+
 def get_pronouns(gender):
-    gender = gender.lower()
-    if gender == "male":
-        return "he", "his"
-    elif gender == "female":
+    if gender == "Female":
         return "she", "her"
-    else:
-        return "they", "their"
+    return "he", "his"
 
-def lowercase_first(text):
-    return text[0].lower() + text[1:] if text else ""
-
-def strip_trailing_punct(text):
-    return text.rstrip(". ,;")
-
-def truncate_comment(comment, max_chars=MAX_CHARS):
-    if len(comment) <= max_chars:
-        return comment
-    truncated = comment[:max_chars].rstrip(" ,;.")
-    if "." in truncated:
-        truncated = truncated[:truncated.rfind(".")+1]
-    return truncated
-
-def generate_comment(name, att, read, write, read_next, write_next, pronouns):
-    p, _ = pronouns
+def generate_comment(name, gender, att, read, write, read_t, write_t):
+    p, poss = get_pronouns(gender)
     opening = random.choice(opening_phrases)
 
-    attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
-    reading_sentence = f"In reading, {p} {reading_bank[read]}."
-    writing_sentence = f"In writing, {p} {writing_bank[write]}."
-    reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_bank[read_next]))}."
-    writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_bank[write_next]))}."
+    reading_phrase = (
+        f"demonstrated {reading_bank[read]}"
+        if read >= 75 else f"experienced difficulty {reading_bank[read]}"
+    )
+    writing_phrase = (
+        f"demonstrated {writing_bank[write]}"
+        if write >= 75 else f"experienced difficulty {writing_bank[write]}"
+    )
 
-    comment = " ".join([
-        attitude_sentence,
-        reading_sentence,
-        writing_sentence,
-        reading_target_sentence,
-        writing_target_sentence
-    ])
+    comment = (
+        f"{opening} {name} {attitude_bank[att]}. "
+        f"{p.capitalize()} {reading_phrase} and {writing_phrase}, "
+        f"which reflected {poss} current level of confidence. "
+        f"Next term, {p} should {reading_target_bank[read_t]}, "
+        f"{writing_target_bank[write_t]}."
+    )
 
-    comment = truncate_comment(comment)
+    comment = truncate_comment(comment, MAX_CHARS)
     return comment, len(comment)
 
-# =========================================
-# STREAMLIT APP
-# =========================================
+# ---------- STREAMLIT UI ----------
 st.title("English Report Comment Generator")
-st.markdown("Fill in the student details and click **Generate Comment**. You can generate multiple entries and download the report as a Word file.")
 
-# Store entries
 if "entries" not in st.session_state:
     st.session_state.entries = []
 
-# ---------- FORM ----------
-with st.form("report_form"):
-    name = st.text_input("Student Name")
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
-    read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
-    write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
-    read_next = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
-    write_next = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
+name = st.text_input("Student Name")
+gender = st.selectbox("Gender", ["Male", "Female"])
 
-    submitted = st.form_submit_button("Generate Comment")
+att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
+read = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
+write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
+read_t = st.selectbox("Next Steps – Reading", sorted(reading_target_bank.keys(), reverse=True))
+write_t = st.selectbox("Next Steps – Writing", sorted(writing_target_bank.keys(), reverse=True))
 
-# ---------- PROCESS ----------
-if submitted and name:
-    pronouns = get_pronouns(gender)
-    comment, char_count = generate_comment(name, att, read, write, read_next, write_next, pronouns)
-    
-    st.text_area("Generated Comment", value=comment, height=200)
-    st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
+if st.button("Generate Comment"):
+    if name:
+        comment, count = generate_comment(name, gender, att, read, write, read_t, write_t)
+        st.session_state.entries.append((name, comment, count))
 
-    # Add to entries
-    st.session_state.entries.append({
-        "Name": name,
-        "Comment": comment,
-        "Characters": char_count
-    })
-
-# ---------- SHOW ENTRIES ----------
 if st.session_state.entries:
-    st.subheader(f"Entries so far: {len(st.session_state.entries)}")
-    for i, entry in enumerate(st.session_state.entries, 1):
-        st.write(f"{i}. {entry['Name']} ({entry['Characters']} chars)")
+    st.subheader("Generated Comments")
+    for i, (n, c, cnt) in enumerate(st.session_state.entries, 1):
+        st.markdown(f"**{i}. {n}**")
+        st.write(c)
+        st.caption(f"Character count (including spaces): {cnt} / {MAX_CHARS}")
 
-# ---------- DOWNLOAD WORD FILE ----------
-if st.session_state.entries:
-    doc = Document()
-    for entry in st.session_state.entries:
-        doc.add_paragraph(f"{entry['Name']}:\n{entry['Comment']}\n")
-    word_name = "English_Report.docx"
-    doc.save(word_name)
-    with open(word_name, "rb") as f:
-        st.download_button("Download Word Report", data=f, file_name=word_name, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    if st.button("Download as Word"):
+        doc = Document()
+        for n, c, _ in st.session_state.entries:
+            doc.add_paragraph(f"{n}\n{c}\n")
+
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+
+        st.download_button(
+            label="Download Word File",
+            data=buffer,
+            file_name="English_Report_Comments.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
