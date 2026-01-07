@@ -1,14 +1,12 @@
 # =========================================
 # STAGE 7 ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
-# Pedagogically sound, optional attitude target
+# Only attitude, reading, writing, and next steps
 # =========================================
 
 import random
 import streamlit as st
-from docx import Document
 
 MAX_CHARS = 490
-MIN_CHARS = 450
 
 # ---------- OPENING PHRASES ----------
 opening_phrases = [
@@ -86,40 +84,22 @@ writing_target_bank = {
     35: "Start by sequencing events and describing one action per sentence."
 }
 
-homework_bank = {
-    90: "complete homework thoughtfully and consistently",
-    85: "complete homework thoughtfully most of the time",
-    80: "complete homework with moderate effort",
-    75: "complete homework some of the time",
-    70: "requires guidance to complete homework",
-}
-
-classwork_bank = {
-    90: "complete classwork thoughtfully and consistently",
-    85: "complete classwork thoughtfully most of the time",
-    80: "complete classwork with moderate effort",
-    75: "complete classwork some of the time",
-    70: "requires guidance to complete classwork",
-}
-
 closer_bank = [
-    "Overall, progress was evident over the course of the term.",
-    "With continued support, further progress is expected next term.",
-    "Confidence improved gradually as the term progressed."
+    "Overall, progress was evident over the course of the term."
 ]
 
 # ---------- HELPERS ----------
-def get_band(value, bank):
+def get_band(value):
     try:
         band = int(value)
-        return band if band in bank else min(bank.keys())
+        return band if band in attitude_bank else 0
     except:
-        return min(bank.keys())
+        return 0
 
-def truncate_comment(comment, max_chars=MAX_CHARS):
+def truncate_comment(comment, max_chars=490):
     if len(comment) <= max_chars:
         return comment
-    truncated = comment[:max_chars].rstrip(" ,;.") 
+    truncated = comment[:max_chars].rstrip(" ,;.")
     if "." in truncated:
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
@@ -131,7 +111,7 @@ def get_pronouns(gender):
     elif gender == "female":
         return "she", "her"
     else:
-        return "they", "their"
+        return "he", "his"
 
 def lowercase_first(text):
     return text[0].lower() + text[1:] if text else ""
@@ -139,95 +119,54 @@ def lowercase_first(text):
 def strip_trailing_punct(text):
     return text.rstrip(". ,;")
 
-def generate_comment(name, att, read, write, read_t, write_t, hw=None, cw=None, attitude_target=None):
-    p, _ = get_pronouns(att)
+def generate_comment(name, att, read, write, read_t, write_t, gender, max_chars=490):
+    p, _ = get_pronouns(gender)
     opening = random.choice(opening_phrases)
-    
+
     attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
     reading_sentence = f"In reading, {p} {reading_bank[read]}."
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
-    
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(strip_trailing_punct(reading_target_bank[read_t]))}."
     writing_target_sentence = f"Additionally, {p} should {lowercase_first(strip_trailing_punct(writing_target_bank[write_t]))}."
-    
-    # Optional attitude target
-    attitude_target_sentence = f"Furthermore, {p} should {lowercase_first(strip_trailing_punct(attitude_target))}." if attitude_target else ""
-    
-    hw_sentence = f"Homework-wise, {p} should {hw}." if hw else ""
-    cw_sentence = f"Classwork-wise, {p} should {cw}." if cw else ""
-    
+    closer_sentence = closer_bank[0]
+
     comment = " ".join([
         attitude_sentence,
         reading_sentence,
         writing_sentence,
         reading_target_sentence,
         writing_target_sentence,
-        attitude_target_sentence,
-        hw_sentence,
-        cw_sentence,
-        closer_bank[0]
+        closer_sentence
     ])
-    
-    # Ensure comment is within 450-490 characters
-    if len(comment) > MAX_CHARS:
-        comment = truncate_comment(comment, MAX_CHARS)
+
+    comment = truncate_comment(comment, max_chars)
     return comment, len(comment)
 
 # =========================================
 # STREAMLIT APP
 # =========================================
 
-st.title("English Report Comment Generator")
+st.title("English Report Comment Generator (Positive)")
 
-st.markdown("Fill in the student details and click **Generate Comment**. You can add multiple students before downloading a combined report.")
+st.markdown("Generate report comments for a student based on achieved and next steps. Character count is shown after generation.")
 
-# Storage for multiple entries
-if "all_comments" not in st.session_state:
-    st.session_state.all_comments = []
-
+# ---------- FORM ----------
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
-    att = st.selectbox("Attitude band", list(attitude_bank.keys()))
-    read = st.selectbox("Reading achievement band", list(reading_bank.keys()))
-    write = st.selectbox("Writing achievement band", list(writing_bank.keys()))
-    read_t = st.selectbox("Reading target band", list(reading_target_bank.keys()))
-    write_t = st.selectbox("Writing target band", list(writing_target_bank.keys()))
-    
-    # Optional fields
-    attitude_target_input = st.text_input("Optional: Add Attitude Target")
-    hw_choice = st.selectbox("Homework level (optional)", list(homework_bank.values()) + [""])
-    cw_choice = st.selectbox("Classwork level (optional)", list(classwork_bank.values()) + [""])
+    att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40])
+    read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40])
+    write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
+    read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
+    write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
     
     submitted = st.form_submit_button("Generate Comment")
 
+# ---------- DISPLAY COMMENT ----------
 if submitted and name:
     comment, char_count = generate_comment(
-        name, att, read, write, read_t, write_t,
-        hw=hw_choice if hw_choice else None,
-        cw=cw_choice if cw_choice else None,
-        attitude_target=attitude_target_input if attitude_target_input else None
+        name, att, read, write, read_t, write_t, gender
     )
+    
     st.text_area("Generated Comment", comment, height=200)
-    st.write(f"Character count (including spaces): {char_count}")
-
-    # Store for multiple entries
-    st.session_state.all_comments.append((name, comment))
-
-# ---------- DOWNLOAD MULTIPLE COMMENTS ----------
-if st.session_state.all_comments:
-    if st.button("Download Combined Word Report"):
-        doc = Document()
-        for student_name, c in st.session_state.all_comments:
-            doc.add_paragraph(f"{student_name}:")
-            doc.add_paragraph(c)
-            doc.add_paragraph("\n")
-        file_name = "combined_student_reports.docx"
-        doc.save(file_name)
-        with open(file_name, "rb") as f:
-            st.download_button(
-                label="Download Word Report",
-                data=f,
-                file_name=file_name,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+    st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
