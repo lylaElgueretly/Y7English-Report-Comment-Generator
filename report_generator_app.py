@@ -1,6 +1,6 @@
 # =========================================
 # ENGLISH REPORT COMMENT GENERATOR
-# Multiple students | ~450-490 chars | Word download
+# Multi-entry | ~480-490 chars | Word download
 # =========================================
 
 import random
@@ -33,7 +33,7 @@ attitude_bank = {
     0:  "required significant support to engage confidently in learning"
 }
 
-# ---------- READING ACHIEVEMENT ----------
+# ---------- READING ----------
 reading_bank = {
     90: "understood texts and made insightful interpretations",
     85: "understood texts confidently and made strong interpretations",
@@ -47,7 +47,7 @@ reading_bank = {
     0:  "recognised familiar words but needed significant support to understand texts"
 }
 
-# ---------- WRITING ACHIEVEMENT ----------
+# ---------- WRITING ----------
 writing_bank = {
     90: "expressed ideas clearly using varied vocabulary and sentence structures",
     85: "wrote confidently using varied sentences and well-chosen vocabulary",
@@ -61,7 +61,7 @@ writing_bank = {
     0:  "required significant support to form sentences in writing"
 }
 
-# ---------- READING TARGET ----------
+# ---------- NEXT STEPS ----------
 reading_target_bank = {
     90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
     85: "extend inference skills and examine alternative interpretations",
@@ -75,7 +75,6 @@ reading_target_bank = {
     35: "begin with guided reading and discussion to identify basic ideas"
 }
 
-# ---------- WRITING TARGET ----------
 writing_target_bank = {
     90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
     85: "refine vocabulary and explore more varied sentence structures for impact",
@@ -89,7 +88,6 @@ writing_target_bank = {
     35: "start by sequencing events and describing one action per sentence"
 }
 
-# ---------- CLOSER ----------
 closer_bank = [
     "Overall, progress was evident over the course of the term.",
     "With continued support, further progress is expected next term.",
@@ -97,7 +95,14 @@ closer_bank = [
 ]
 
 # ---------- HELPERS ----------
-def truncate_comment(comment, max_chars=490):
+def get_band(value):
+    try:
+        band = int(value)
+        return band
+    except:
+        return 0
+
+def truncate_comment(comment, max_chars=MAX_CHARS):
     if len(comment) <= max_chars:
         return comment
     truncated = comment[:max_chars].rstrip(" ,;.") 
@@ -105,7 +110,8 @@ def truncate_comment(comment, max_chars=490):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-def generate_comment(name, att, read, write, read_t, write_t):
+# ---------- GENERATE COMMENT ----------
+def generate_comment(name, att, read, write, read_t, write_t, max_chars=MAX_CHARS):
     opening = random.choice(opening_phrases)
     comment = (
         f"{opening} {name} {attitude_bank[att]}. "
@@ -115,51 +121,64 @@ def generate_comment(name, att, read, write, read_t, write_t):
         f"Additionally, {name.lower()} should {writing_target_bank[write_t]}. "
         f"{closer_bank[0]}"
     )
-    comment = truncate_comment(comment, MAX_CHARS)
+
+    # Add small padding to reach ~480 chars if too short
+    while len(comment) < 480:
+        comment += " This reflects continued engagement and commitment to learning."
+        if len(comment) > max_chars:
+            break
+
+    comment = truncate_comment(comment, max_chars)
     return comment, len(comment)
 
-# ---------- STREAMLIT APP ----------
+# =========================================
+# STREAMLIT APP
+# =========================================
+
 st.title("English Report Comment Generator")
 
+st.markdown("Fill in the student details and click **Generate Comment**. You can add multiple entries and download all comments as a Word file.")
+
+# ---------- STORE ENTRIES ----------
 if "entries" not in st.session_state:
     st.session_state.entries = []
 
-with st.form("student_form"):
+# ---------- FORM ----------
+with st.form("report_form"):
     name = st.text_input("Student Name")
-    att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
-    read = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
-    write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
-    read_t = st.selectbox("Next Steps - Reading", sorted(reading_target_bank.keys(), reverse=True))
-    write_t = st.selectbox("Next Steps - Writing", sorted(writing_target_bank.keys(), reverse=True))
+    att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
+    read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
+    write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
+    read_t = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
+    write_t = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
 
     submitted = st.form_submit_button("Generate Comment")
 
+# ---------- DISPLAY COMMENT ----------
 if submitted and name:
     comment, char_count = generate_comment(name, att, read, write, read_t, write_t)
     st.session_state.entries.append((name, comment, char_count))
 
-# ---------- DISPLAY ALL GENERATED COMMENTS ----------
+# ---------- SHOW GENERATED COMMENTS ----------
 if st.session_state.entries:
     st.subheader("Generated Comments")
-    for i, (student_name, comment, char_count) in enumerate(st.session_state.entries, 1):
-        st.markdown(f"**{i}. {student_name}**")
-        st.write(comment)
-        st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
-
-# ---------- ADD ANOTHER STUDENT BUTTON ----------
-if st.session_state.entries:
-    if st.button("Add Another Student"):
-        st.experimental_rerun()
+    for i, (n, c, count) in enumerate(st.session_state.entries, 1):
+        st.markdown(f"**{i}. {n}**")
+        st.text_area("", c, height=150)
+        st.write(f"Character count (including spaces): {count} / {MAX_CHARS}")
 
 # ---------- DOWNLOAD WORD FILE ----------
 if st.session_state.entries:
     doc = Document()
-    for i, (student_name, comment, _) in enumerate(st.session_state.entries, 1):
-        doc.add_paragraph(f"{i}. {student_name}")
-        doc.add_paragraph(comment)
-        doc.add_paragraph("")  # space between comments
+    for n, c, _ in st.session_state.entries:
+        doc.add_paragraph(f"{n}: {c}\n")
     file_name = "English_Report_Comments.docx"
     doc.save(file_name)
+
     with open(file_name, "rb") as f:
-        st.download_button("Download Word Report", f, file_name=file_name,
-                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        st.download_button(
+            label="Download All Comments as Word",
+            data=f,
+            file_name=file_name,
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
