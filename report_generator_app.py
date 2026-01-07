@@ -1,6 +1,6 @@
 # =========================================
 # ENGLISH REPORT COMMENT GENERATOR
-# Multiple students | Positive phrasing | Curriculum-aligned | Word download
+# Multiple students | ~450-490 chars | Word download
 # =========================================
 
 import random
@@ -97,13 +97,6 @@ closer_bank = [
 ]
 
 # ---------- HELPERS ----------
-def get_band(value):
-    try:
-        band = int(value)
-        return band
-    except:
-        return 0
-
 def truncate_comment(comment, max_chars=490):
     if len(comment) <= max_chars:
         return comment
@@ -125,43 +118,35 @@ def generate_comment(name, att, read, write, read_t, write_t):
     comment = truncate_comment(comment, MAX_CHARS)
     return comment, len(comment)
 
-# =========================================
-# STREAMLIT APP
-# =========================================
-
+# ---------- STREAMLIT APP ----------
 st.title("English Report Comment Generator")
 
-st.markdown("Generate multiple student report comments and download as a Word document. Each comment shows character count (including spaces).")
-
-# ---------- STORAGE ----------
 if "entries" not in st.session_state:
     st.session_state.entries = []
 
-# ---------- FORM ----------
-with st.form("report_form"):
+with st.form("student_form"):
     name = st.text_input("Student Name")
-    att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
-    read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
-    write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
-    read_t = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
-    write_t = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
+    att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
+    read = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
+    write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
+    read_t = st.selectbox("Next Steps - Reading", sorted(reading_target_bank.keys(), reverse=True))
+    write_t = st.selectbox("Next Steps - Writing", sorted(writing_target_bank.keys(), reverse=True))
 
     submitted = st.form_submit_button("Generate Comment")
 
-# ---------- GENERATE COMMENT ----------
 if submitted and name:
     comment, char_count = generate_comment(name, att, read, write, read_t, write_t)
-    st.session_state.entries.append({"name": name, "comment": comment, "char_count": char_count})
+    st.session_state.entries.append((name, comment, char_count))
 
-# ---------- DISPLAY GENERATED COMMENTS ----------
+# ---------- DISPLAY ALL GENERATED COMMENTS ----------
 if st.session_state.entries:
     st.subheader("Generated Comments")
-    for idx, entry in enumerate(st.session_state.entries, start=1):
-        st.markdown(f"**{idx}. {entry['name']}**")
-        st.text_area("", entry["comment"], height=150)
-        st.write(f"Character count (including spaces): {entry['char_count']} / {MAX_CHARS}")
+    for i, (student_name, comment, char_count) in enumerate(st.session_state.entries, 1):
+        st.markdown(f"**{i}. {student_name}**")
+        st.write(comment)
+        st.write(f"Character count (including spaces): {char_count} / {MAX_CHARS}")
 
-# ---------- ADD ANOTHER STUDENT ----------
+# ---------- ADD ANOTHER STUDENT BUTTON ----------
 if st.session_state.entries:
     if st.button("Add Another Student"):
         st.experimental_rerun()
@@ -169,16 +154,12 @@ if st.session_state.entries:
 # ---------- DOWNLOAD WORD FILE ----------
 if st.session_state.entries:
     doc = Document()
-    for entry in st.session_state.entries:
-        doc.add_paragraph(f"{entry['name']}")
-        doc.add_paragraph(entry['comment'])
-        doc.add_paragraph("")  # blank line
-    file_name = "student_report_comments.docx"
+    for i, (student_name, comment, _) in enumerate(st.session_state.entries, 1):
+        doc.add_paragraph(f"{i}. {student_name}")
+        doc.add_paragraph(comment)
+        doc.add_paragraph("")  # space between comments
+    file_name = "English_Report_Comments.docx"
     doc.save(file_name)
     with open(file_name, "rb") as f:
-        st.download_button(
-            label="Download All Comments (Word)",
-            data=f,
-            file_name=file_name,
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+        st.download_button("Download Word Report", f, file_name=file_name,
+                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
