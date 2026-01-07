@@ -1,12 +1,14 @@
 # =========================================
-# ENGLISH REPORT COMMENT GENERATOR
-# Multiple entries | Positive phrasing | Curriculum-aligned
+# STAGE 7 ENGLISH REPORT COMMENT GENERATOR
+# Pedagogically sound | Curriculum adaptable | AI & Python powered
 # =========================================
 
-import random
 import streamlit as st
+import random
 from docx import Document
+from io import BytesIO
 
+# ---------- CONSTANTS ----------
 MAX_CHARS = 490
 
 # ---------- OPENING PHRASES ----------
@@ -19,47 +21,48 @@ opening_phrases = [
     "Over the past term,"
 ]
 
-# ---------- BANKS ----------
+# ---------- ATTITUDE ----------
 attitude_bank = {
-    90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
-    85: "demonstrated a highly positive and motivated attitude towards learning",
-    80: "showed a positive and motivated attitude towards learning and participated confidently",
-    75: "showed consistent effort and engaged well in class activities",
-    70: "was generally focused and responded well to guidance",
-    65: "showed a steady approach to learning but benefited from encouragement",
-    60: "required support to remain focused and engaged in lessons",
-    55: "needed regular guidance to remain engaged and confident",
-    40: "found it challenging to stay focused and required consistent encouragement",
-    0:  "required significant support to engage confidently in learning"
+    90: "demonstrates an excellent attitude to learning; highly motivated, consistently engaged, and takes initiative in lessons",
+    85: "shows a strong attitude to learning; usually focused, motivated, and participates actively",
+    80: "has a positive attitude to learning; generally attentive and willing to contribute",
+    75: "shows a good attitude to learning; usually completes tasks on time and engages in class activities",
+    70: "displays a satisfactory attitude; completes tasks with support and engages occasionally",
+    65: "demonstrates a developing attitude; sometimes attentive and completes tasks with prompting",
+    60: "shows a limited attitude; needs regular prompting and reminders to stay on task",
+    55: "attitude to learning is inconsistent; frequently distracted or passive in class",
+    40: "shows minimal engagement in learning activities",
+    35: "rarely demonstrates focus or motivation in learning"
 }
 
+attitude_next_steps = {
+    90: "continue challenging themselves and leading by example in group tasks",
+    85: "maintain engagement and seek opportunities to extend learning independently",
+    80: "increase participation in discussions and take more initiative in independent tasks",
+    75: "focus on asking questions to deepen understanding and improve consistency",
+    70: "work on increasing focus and taking a more active role in lessons",
+    65: "aim to engage more consistently and take responsibility for independent learning",
+    60: "develop personal organisation and focus; try to contribute more during lessons",
+    55: "focus on staying engaged and completing tasks on time with support",
+    40: "begin by setting small targets to complete tasks and participate in lessons",
+    35: "work on basic engagement skills, starting with short, achievable tasks and participation"
+}
+
+# ---------- READING ----------
 reading_bank = {
-    90: "understood texts and made insightful interpretations",
-    85: "understood texts confidently and made strong interpretations",
-    80: "understood texts confidently and interpreted key points",
-    75: "understood texts securely and identified key ideas",
-    70: "understood main ideas in texts with some support",
-    65: "identified key points in texts with guidance",
-    60: "showed basic understanding of texts with support",
-    55: "understood simple information in texts",
-    40: "understood texts with support",
-    0:  "recognised familiar words but needed significant support to understand texts"
+    90: "demonstrates excellent understanding of explicit and implicit ideas in texts",
+    85: "shows strong understanding of explicit and some implicit ideas",
+    80: "understands main ideas and some supporting details",
+    75: "shows good understanding of main ideas with occasional inference",
+    70: "understands basic ideas; limited inference",
+    65: "identifies a few ideas with minimal inference",
+    60: "recognises simple ideas",
+    55: "understands very basic ideas",
+    40: "struggles to identify ideas",
+    35: "minimal comprehension of texts"
 }
 
-writing_bank = {
-    90: "expressed ideas clearly using varied vocabulary and sentence structures",
-    85: "wrote confidently using varied sentences and well-chosen vocabulary",
-    80: "wrote structured pieces with appropriate vocabulary",
-    75: "wrote organised paragraphs with suitable vocabulary",
-    70: "wrote clear sentences and simple paragraphs",
-    65: "wrote simple sentences with some organisation",
-    60: "wrote short sentences with support",
-    55: "structured simple written responses",
-    40: "expressed ideas with support",
-    0:  "required significant support to form sentences in writing"
-}
-
-reading_target_bank = {
+reading_next_steps = {
     90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
     85: "extend inference skills and examine alternative interpretations",
     80: "focus on recognising subtler implications and supporting ideas with evidence",
@@ -72,7 +75,21 @@ reading_target_bank = {
     35: "begin with guided reading and discussion to identify basic ideas"
 }
 
-writing_target_bank = {
+# ---------- WRITING ----------
+writing_bank = {
+    90: "writes highly engaging narratives, showing not telling, with vivid verbs and sensory language",
+    85: "writes engaging narratives with effective descriptive and sensory detail",
+    80: "produces clear narratives using some descriptive and sensory language",
+    75: "writes coherent narratives with occasional description",
+    70: "uses basic description; narrative is simple",
+    65: "narrative is straightforward; limited descriptive detail",
+    60: "very basic narrative with minimal description",
+    55: "narrative is underdeveloped",
+    40: "struggles to write narratives",
+    35: "writing lacks narrative sense"
+}
+
+writing_next_steps = {
     90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
     85: "refine vocabulary and explore more varied sentence structures for impact",
     80: "focus on precise sensory words and 'showing' character emotions",
@@ -85,103 +102,83 @@ writing_target_bank = {
     35: "start by sequencing events and describing one action per sentence"
 }
 
-closer_bank = [
-    "Overall, progress was evident over the course of the term.",
-    "With continued support, further progress is expected next term.",
-    "Confidence improved gradually as the term progressed."
-]
-
 # ---------- HELPERS ----------
-def get_band(value):
+def get_band(value, bank):
     try:
         band = int(value)
-        return band if band in attitude_bank else 0
+        return band if band in bank else 0
     except:
         return 0
 
 def truncate_comment(comment, max_chars=MAX_CHARS):
     if len(comment) <= max_chars:
         return comment
-    truncated = comment[:max_chars].rstrip(" ,;.") 
-    if "." in truncated:
-        truncated = truncated[:truncated.rfind(".")+1]
-    return truncated
+    else:
+        return comment[:max_chars].rsplit(' ', 1)[0]
 
-def capitalize_name(text, name):
-    return text.replace(name.lower(), name)
-
-# ---------- COMMENT GENERATOR ----------
-def generate_comment(name, att, read, write, read_t, write_t):
+def generate_comment(name, att, read, write):
+    p = "he"  # pronoun; adapt if needed
     opening = random.choice(opening_phrases)
+
     comment = (
         f"{opening} {name} {attitude_bank[att]}. "
         f"In reading, {name.lower()} {reading_bank[read]}. "
         f"In writing, {name.lower()} {writing_bank[write]}. "
-        f"For the next term, {name.lower()} should {reading_target_bank[read_t]}. "
-        f"Additionally, {name.lower()} should {writing_target_bank[write_t]}. "
-        f"{closer_bank[0]}"
+        f"For the next term, {p} should {reading_next_steps[read]}. "
+        f"In addition, {p} should {writing_next_steps[write]}."
     )
-    comment = capitalize_name(comment, name)
+
     comment = truncate_comment(comment)
     return comment, len(comment)
 
-# =========================================
-# STREAMLIT APP
-# =========================================
-
+# ---------- STREAMLIT UI ----------
 st.title("English Report Comment Generator")
 
-st.markdown(
-    "Fill in the student details and click **Generate Comment**. "
-    "You can add multiple students and download all comments as a Word file."
-)
+# Session state for multiple entries
+if "comments" not in st.session_state:
+    st.session_state.comments = []
 
-if "entries" not in st.session_state:
-    st.session_state.entries = []
-
-# ---------- FORM ----------
-with st.form("report_form"):
+with st.form("comment_form"):
     name = st.text_input("Student Name")
-    att = st.selectbox("Attitude to Learning", [90,85,80,75,70,65,60,55,40])
-    read = st.selectbox("Reading Achieved", [90,85,80,75,70,65,60,55,40])
-    write = st.selectbox("Writing Achieved", [90,85,80,75,70,65,60,55,40])
-    read_t = st.selectbox("Next Steps - Reading", [90,85,80,75,70,65,60,55,40])
-    write_t = st.selectbox("Next Steps - Writing", [90,85,80,75,70,65,60,55,40])
-
+    att = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
+    read = st.selectbox("Reading Achieved", sorted(reading_bank.keys(), reverse=True))
+    write = st.selectbox("Writing Achieved", sorted(writing_bank.keys(), reverse=True))
+    
     submitted = st.form_submit_button("Generate Comment")
-    add_another = st.form_submit_button("Add Another Student")
+    
+    if submitted and name:
+        comment, char_count = generate_comment(name, att, read, write)
+        st.session_state.comments.append({
+            "name": name,
+            "comment": comment,
+            "char_count": char_count
+        })
 
-# ---------- HANDLE SUBMISSION ----------
-if submitted and name:
-    comment, count = generate_comment(name, att, read, write, read_t, write_t)
-    st.session_state.entries.append({"name": name, "comment": comment, "count": count})
-
-# ---------- DISPLAY COMMENTS ----------
-if st.session_state.entries:
+# Display all generated comments
+if st.session_state.comments:
     st.subheader("Generated Comments")
-    for i, entry in enumerate(st.session_state.entries, 1):
-        st.markdown(f"**{i}. {entry['name']}**")
-        st.text_area("", entry['comment'], height=150)
-        st.write(f"Character count (including spaces): {entry['count']} / {MAX_CHARS}")
+    for idx, entry in enumerate(st.session_state.comments, 1):
+        st.markdown(f"**{idx}. {entry['name']}**")
+        st.write(entry["comment"])
+        st.write(f"Character count (including spaces): {entry['char_count']} / {MAX_CHARS}")
 
-# ---------- DOWNLOAD WORD FILE ----------
-if st.session_state.entries:
+# ---------- DOWNLOAD AS WORD ----------
+if st.session_state.comments:
     doc = Document()
-    for entry in st.session_state.entries:
-        doc.add_paragraph(f"{entry['name']}")
+    for idx, entry in enumerate(st.session_state.comments, 1):
+        doc.add_paragraph(f"{idx}. {entry['name']}")
         doc.add_paragraph(entry['comment'])
-        doc.add_paragraph("")
-    file_name = "english_report_comments.docx"
-    doc.save(file_name)
-
-    with open(file_name, "rb") as f:
-        st.download_button(
-            label="Download All Comments as Word File",
-            data=f,
-            file_name=file_name,
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-
-# ---------- CLEAR FORM FOR NEXT STUDENT ----------
-if add_another:
-    st.experimental_rerun()
+        doc.add_paragraph(f"Character count (including spaces): {entry['char_count']} / {MAX_CHARS}")
+        doc.add_paragraph("")  # blank line
+    
+    # Save to BytesIO
+    file_stream = BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+    
+    st.download_button(
+        label="Download All Comments as Word",
+        data=file_stream,
+        file_name="generated_comments.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
