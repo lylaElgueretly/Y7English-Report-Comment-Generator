@@ -1,13 +1,12 @@
-# =========================================
-# STAGE 7 ENGLISH REPORT COMMENT GENERATOR
-# Streamlit Version | Multi-student | Next Steps Included
-# =========================================
-
+# report_generator_app.py
 import streamlit as st
-from docx import Document
 import random
+from docx import Document
+from io import BytesIO
 
-# ---------- MAX CHARS ----------
+# ===============================
+# CONFIG
+# ===============================
 MAX_CHARS = 490
 
 # ---------- OPENING PHRASES ----------
@@ -16,7 +15,8 @@ opening_phrases = [
     "Over the course of this term,",
     "During this term,",
     "Throughout this term,",
-    "In this term,"
+    "In this term,",
+    "Over the past term,"
 ]
 
 # ---------- ATTITUDE ----------
@@ -33,21 +33,6 @@ attitude_bank = {
     35: "rarely demonstrates focus or motivation in learning"
 }
 
-# ---------- NEXT STEPS - ATTITUDE ----------
-attitude_next_bank = {
-    90: "Continue challenging themselves and leading by example in group tasks",
-    85: "Maintain engagement and seek opportunities to extend learning independently",
-    80: "Increase participation in discussions and take more initiative in independent tasks",
-    75: "Focus on asking questions to deepen understanding and improve consistency",
-    70: "Work on increasing focus and taking a more active role in lessons",
-    65: "Aim to engage more consistently and take responsibility for independent learning",
-    60: "Develop personal organisation and focus; try to contribute more during lessons",
-    55: "Focus on staying engaged and completing tasks on time with support",
-    40: "Begin by setting small targets to complete tasks and participate in lessons",
-    35: "Work on basic engagement skills, starting with short, achievable tasks and participation"
-}
-
-# ---------- READING BANKS ----------
 reading_bank = {
     90: "demonstrates excellent understanding of explicit and implicit ideas in texts",
     85: "shows strong understanding of explicit and some implicit ideas",
@@ -61,20 +46,6 @@ reading_bank = {
     35: "minimal comprehension of texts"
 }
 
-reading_next_bank = {
-    90: "Explore subtler inferences and interpret multiple perspectives to deepen analysis",
-    85: "Extend inference skills and examine alternative interpretations",
-    80: "Focus on recognising subtler implications and supporting ideas with evidence",
-    75: "Practice identifying hidden meanings and making connections within the text",
-    70: "Work on identifying implied ideas and summarising main points",
-    65: "Focus on reading for meaning and noting key details",
-    60: "Strengthen comprehension by paraphrasing and asking questions about the text",
-    55: "Build vocabulary and re-read to clarify meaning",
-    40: "Identify key events and main points with guided support",
-    35: "Begin with guided reading and discussion to identify basic ideas"
-}
-
-# ---------- WRITING BANKS ----------
 writing_bank = {
     90: "writes highly engaging narratives, showing not telling, with vivid verbs and sensory language",
     85: "writes engaging narratives with effective descriptive and sensory detail",
@@ -88,127 +59,98 @@ writing_bank = {
     35: "writing lacks narrative sense"
 }
 
+reading_next_bank = {
+    90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
+    85: "extend inference skills and examine alternative interpretations",
+    80: "focus on recognising subtler implications and supporting ideas with evidence",
+    75: "practice identifying hidden meanings and making connections within the text",
+    70: "work on identifying implied ideas and summarising main points",
+    65: "focus on reading for meaning and noting key details",
+    60: "strengthen comprehension by paraphrasing and asking questions about the text",
+    55: "build vocabulary and re-read to clarify meaning",
+    40: "identify key events and main points with guided support",
+    35: "begin with guided reading and discussion to identify basic ideas"
+}
+
 writing_next_bank = {
-    90: "Experiment with subtle suspense, varied perspectives, and advanced sensory effects",
-    85: "Refine vocabulary and explore more varied sentence structures for impact",
-    80: "Focus on precise sensory words and “showing” character emotions",
-    75: "Add more sensory details and actions that reveal character traits",
-    70: "Replace “telling” statements with descriptive or action-based sentences",
-    65: "Include adjectives, vivid verbs, and sensory details to enhance imagery",
-    60: "Focus on including at least one sensory detail per paragraph",
-    55: "Use sentence starters and story maps to add detail",
-    40: "Begin with simple sentences describing events and character feelings",
-    35: "Start by sequencing events and describing one action per sentence"
+    90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
+    85: "refine vocabulary and explore more varied sentence structures for impact",
+    80: "focus on precise sensory words and 'showing' character emotions",
+    75: "add more sensory details and actions that reveal character traits",
+    70: "replace 'telling' statements with descriptive or action-based sentences",
+    65: "include adjectives, vivid verbs, and sensory details to enhance imagery",
+    60: "focus on including at least one sensory detail per paragraph",
+    55: "use sentence starters and story maps to add detail",
+    40: "begin with simple sentences describing events and character feelings",
+    35: "start by sequencing events and describing one action per sentence"
 }
 
 # ---------- HELPERS ----------
-def get_band(value, bank):
-    try:
-        band = int(value)
-        return band if band in bank else 0
-    except:
-        return 0
+def safe_truncate(text, max_len):
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rsplit(' ',1)[0]
 
-def truncate_comment(comment, max_chars=MAX_CHARS):
-    if len(comment) <= max_chars:
-        return comment
-    else:
-        return comment[:max_chars].rsplit(' ', 1)[0]
+def generate_comment(student, max_chars=MAX_CHARS):
+    # Split max_chars into sections
+    budgets = [120, 90, 90, 90, 90]  # opening/attitude, reading, writing, reading next, writing next
+    
+    sections = [
+        f"{random.choice(opening_phrases)} {student['name']} {attitude_bank[student['attitude']]}",
+        f"In reading, {student['name'].lower()} {reading_bank[student['reading']]}",
+        f"In writing, {student['name'].lower()} {writing_bank[student['writing']]}",
+        f"In the future, {student['name'].lower()} should {reading_next_bank[student['reading_next']]}",
+        f"In addition, {student['name'].lower()} should {writing_next_bank[student['writing_next']]}"
+    ]
+    
+    truncated_sections = [safe_truncate(s,b) for s,b in zip(sections, budgets)]
+    comment = ". ".join(truncated_sections) + "."
+    return comment, len(comment)
 
-# ---------- GENERATE COMMENT ----------
-def generate_comment(student):
-    opening = random.choice(opening_phrases)
-    name = student["name"]
-    att = student["attitude"]
-    read = student["reading"]
-    write = student["writing"]
-    read_next = student["reading_next"]
-    write_next = student["writing_next"]
+def create_word_download(comments):
+    doc = Document()
+    for i, c in enumerate(comments, start=1):
+        doc.add_paragraph(f"{i}. {c['name']}\n")
+        doc.add_paragraph(c['comment'])
+        doc.add_paragraph(f"Character count (including spaces): {c['count']} / {MAX_CHARS}\n")
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
-    comment = (
-        f"{opening} {name} {attitude_bank[att]}. "
-        f"In reading, {name.lower()} {reading_bank[read]}. "
-        f"In writing, {name.lower()} {writing_bank[write]}. "
-        f"In the future, {name.lower()} should {reading_next_bank[read_next]}. "
-        f"In addition, {name.lower()} should {writing_next_bank[write_next]}."
-    )
-
-    char_count = len(comment)
-    if char_count > MAX_CHARS:
-        # truncate only achievements, preserve next steps
-        achievement_part = (
-            f"{opening} {name} {attitude_bank[att]}. "
-            f"In reading, {name.lower()} {reading_bank[read]}. "
-            f"In writing, {name.lower()} {writing_bank[write]}."
-        )
-        achievement_part = truncate_comment(achievement_part, MAX_CHARS - 80)  # reserve space for next steps
-        comment = (
-            f"{achievement_part} "
-            f"In the future, {name.lower()} should {reading_next_bank[read_next]}. "
-            f"In addition, {name.lower()} should {writing_next_bank[write_next]}."
-        )
-        char_count = len(comment)
-
-    return comment, char_count
-
-# ---------- STREAMLIT APP ----------
-st.set_page_config(page_title="English Report Comment Generator")
-
+# ===============================
+# STREAMLIT APP
+# ===============================
 st.title("English Report Comment Generator")
 
-if "students" not in st.session_state:
+if 'students' not in st.session_state:
     st.session_state.students = []
 
-with st.form("student_form"):
+with st.form(key='student_form'):
     name = st.text_input("Student Name")
-    attitude = st.selectbox("Attitude to Learning", options=list(attitude_bank.keys()), index=0)
-    reading = st.selectbox("Reading Achieved", options=list(reading_bank.keys()), index=0)
-    writing = st.selectbox("Writing Achieved", options=list(writing_bank.keys()), index=0)
-    reading_next = st.selectbox("Next Steps - Reading", options=list(reading_next_bank.keys()), index=0)
-    writing_next = st.selectbox("Next Steps - Writing", options=list(writing_next_bank.keys()), index=0)
-    submitted = st.form_submit_button("Generate Comment")
+    attitude = st.selectbox("Attitude to Learning", sorted(attitude_bank.keys(), reverse=True))
+    reading = st.selectbox("Reading Achievement", sorted(reading_bank.keys(), reverse=True))
+    writing = st.selectbox("Writing Achievement", sorted(writing_bank.keys(), reverse=True))
+    reading_next = st.selectbox("Next Step - Reading", sorted(reading_next_bank.keys(), reverse=True))
+    writing_next = st.selectbox("Next Step - Writing", sorted(writing_next_bank.keys(), reverse=True))
+    
+    submit = st.form_submit_button("Generate Comment")
+    
+    if submit and name:
+        student = {
+            'name': name.strip(),
+            'attitude': attitude,
+            'reading': reading,
+            'writing': writing,
+            'reading_next': reading_next,
+            'writing_next': writing_next
+        }
+        comment, count = generate_comment(student)
+        student['comment'] = comment
+        student['count'] = count
+        st.session_state.students.append(student)
 
-if submitted:
-    student_data = {
-        "name": name,
-        "attitude": attitude,
-        "reading": reading,
-        "writing": writing,
-        "reading_next": reading_next,
-        "writing_next": writing_next
-    }
-    comment, char_count = generate_comment(student_data)
-    student_data["comment"] = comment
-    student_data["char_count"] = char_count
-
-    st.session_state.students.append(student_data)
-
-# ---------- DISPLAY GENERATED COMMENTS ----------
+# Display generated comments
 if st.session_state.students:
     st.subheader("Generated Comments")
-    for idx, s in enumerate(st.session_state.students, 1):
-        st.markdown(f"**{idx}. {s['name']}**")
-        st.write(s['comment'])
-        st.write(f"Character count (including spaces): {s['char_count']} / {MAX_CHARS}")
-
-    # ---------- DOWNLOAD AS WORD ----------
-    def download_word(students):
-        doc = Document()
-        doc.add_heading("English Report Comments", 0)
-        for idx, s in enumerate(students, 1):
-            doc.add_heading(f"{idx}. {s['name']}", level=1)
-            doc.add_paragraph(s["comment"])
-            doc.add_paragraph(f"Character count: {s['char_count']} / {MAX_CHARS}")
-        file_path = "report_comments.docx"
-        doc.save(file_path)
-        return file_path
-
-    st.download_button(
-        label="Download All Comments as Word",
-        data=open(download_word(st.session_state.students), "rb").read(),
-        file_name="report_comments.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-
-st.write("---")
-st.write("Add another student by filling the form above.")
+    for i, s in enumerate(st.session_state.students, s_
