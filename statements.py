@@ -1,7 +1,3 @@
-# =========================================
-# ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
-# =========================================
-
 import random
 import streamlit as st
 from docx import Document
@@ -9,8 +5,8 @@ import io
 
 from statements import *
 
-TARGET_CHARS = 499  # target character count including spaces
-MAX_VARIANTS = 3    # total number of variants
+TARGET_CHARS = 499
+MAX_VARIANTS = 3
 
 # ---------- HELPERS ----------
 def get_pronouns(gender):
@@ -32,13 +28,10 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-# ---------- PICK PHRASE BASED ON VARIANT ----------
 def pick_phrase(bank_variant, band):
-    """bank_variant is a dict for current variant"""
     return bank_variant.get(band, "")
 
 def get_current_banks(variant):
-    """Return the banks for the current variant"""
     if variant == 1:
         return attitude_bank1, reading_bank1, writing_bank1, reading_target_bank1, writing_target_bank1
     elif variant == 2:
@@ -46,7 +39,6 @@ def get_current_banks(variant):
     else:
         return attitude_bank3, reading_bank3, writing_bank3, reading_target_bank3, writing_target_bank3
 
-# ---------- GENERATE COMMENT ----------
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None, variant=1):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
@@ -75,12 +67,7 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     comment = truncate_comment(comment, TARGET_CHARS)
     return f"{name} (Variant {variant}): {comment}"
 
-# ---------- STREAMLIT APP ----------
-st.title("English Report Comment Generator (~499 chars)")
-st.markdown(
-    "Fill in the student details and click **Generate Comment**. You can add multiple students before downloading the full report."
-)
-
+# ---------- SESSION STATE ----------
 if 'all_comments' not in st.session_state:
     st.session_state['all_comments'] = []
 
@@ -92,6 +79,10 @@ if 'current_comment' not in st.session_state:
 
 if 'current_pronouns' not in st.session_state:
     st.session_state['current_pronouns'] = ("they", "their")
+
+# ---------- STREAMLIT UI ----------
+st.title("English Report Comment Generator (~499 chars)")
+st.markdown("Fill in the student details and click **Generate Comment**. You can vary the comment or add multiple students before downloading the full report.")
 
 # ---------- FORM ----------
 with st.form("report_form"):
@@ -121,24 +112,25 @@ if st.session_state['current_comment']:
     st.write(f"Character count (including spaces): {len(st.session_state['current_comment'])} / {TARGET_CHARS}")
 
     # ---------- VARIANT BUTTON ----------
-    if st.button("Vary Comment"):
-        st.session_state['current_variant'] += 1
-        if st.session_state['current_variant'] > MAX_VARIANTS:
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Vary Comment"):
+            st.session_state['current_variant'] += 1
+            if st.session_state['current_variant'] > MAX_VARIANTS:
+                st.session_state['current_variant'] = 1
+            st.session_state['current_comment'] = generate_comment(
+                name, att, read, write, read_t, write_t,
+                st.session_state['current_pronouns'],
+                attitude_target,
+                variant=st.session_state['current_variant']
+            )
+            st.experimental_rerun()
+    with col2:
+        if st.button("Add Another Comment"):
+            st.session_state['all_comments'].append(st.session_state['current_comment'])
+            st.session_state['current_comment'] = ""
             st.session_state['current_variant'] = 1
-        st.session_state['current_comment'] = generate_comment(
-            name, att, read, write, read_t, write_t,
-            st.session_state['current_pronouns'], 
-            attitude_target,
-            variant=st.session_state['current_variant']
-        )
-        st.experimental_rerun()
-
-    # ---------- ADD COMMENT ----------
-    if st.button("Add Another Comment"):
-        st.session_state['all_comments'].append(st.session_state['current_comment'])
-        st.session_state['current_comment'] = ""
-        st.session_state['current_variant'] = 1
-        st.experimental_rerun()
+            st.experimental_rerun()
 
 # ---------- DOWNLOAD FULL REPORT ----------
 if st.session_state['all_comments']:
