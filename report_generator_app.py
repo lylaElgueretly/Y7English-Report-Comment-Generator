@@ -17,8 +17,7 @@ from statements import (
     closer_bank
 )
 
-TARGET_CHARS = 499
-MAX_VARIANTS = 3  # number of variants per band
+TARGET_CHARS = 499  # target character count including spaces
 
 # ---------- HELPERS ----------
 def get_pronouns(gender):
@@ -40,23 +39,27 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
+# ---------- GENERATE COMMENT FUNCTION ----------
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None, variant=0):
     """
     Generate a report comment using the specified variant.
     """
     p, _ = pronouns
-    opening = random.choice(opening_phrases)
+    v = variant  # use for cycling through variations
 
-    # Always wrap variant to MAX_VARIANTS
-    v = variant % MAX_VARIANTS
+    def pick_phrase(bank, key):
+        val = bank[key]
+        if isinstance(val, list):
+            return val[v % len(val)]
+        return val
 
-    att_phrase = attitude_bank[att][v] if isinstance(attitude_bank[att], list) else attitude_bank[att]
-    read_phrase = reading_bank[read][v] if isinstance(reading_bank[read], list) else reading_bank[read]
-    write_phrase = writing_bank[write][v] if isinstance(writing_bank[write], list) else writing_bank[write]
-    read_target_phrase = reading_target_bank[read_t][v] if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
-    write_target_phrase = writing_target_bank[write_t][v] if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
+    att_phrase = pick_phrase(attitude_bank, att)
+    read_phrase = pick_phrase(reading_bank, read)
+    write_phrase = pick_phrase(writing_bank, write)
+    read_target_phrase = pick_phrase(reading_target_bank, read_t)
+    write_target_phrase = pick_phrase(writing_target_bank, write_t)
 
-    attitude_sentence = f"{opening} {name} {att_phrase}."
+    attitude_sentence = f"{name} (Variant {v+1}): {att_phrase}."
     reading_sentence = f"In reading, {p} {read_phrase}."
     writing_sentence = f"In writing, {p} {write_phrase}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
@@ -79,26 +82,22 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
 # ---------- STREAMLIT APP ----------
 st.title("English Report Comment Generator (~499 chars)")
 st.markdown(
-    "Fill in the student details and click **Generate Comment**. Use **Vary Comment** to cycle variants. Add multiple students before downloading the full report."
+    "Fill in the student details and click **Generate Comment**. Use **Vary Comment** to cycle variants. Download full report when done."
 )
 
-# ---------- SESSION STATE ----------
 if 'all_comments' not in st.session_state:
     st.session_state['all_comments'] = []
 
 if 'current_variant' not in st.session_state:
     st.session_state['current_variant'] = 0
 
-if 'current_pronouns' not in st.session_state:
-    st.session_state['current_pronouns'] = ("they", "their")
-
-if 'current_student' not in st.session_state:
-    st.session_state['current_student'] = {}
-
 if 'current_comment' not in st.session_state:
     st.session_state['current_comment'] = ""
 
-# ---------- STUDENT FORM ----------
+if 'current_pronouns' not in st.session_state:
+    st.session_state['current_pronouns'] = ("they", "their")
+
+# Form for student details
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -111,58 +110,44 @@ with st.form("report_form"):
 
     submitted = st.form_submit_button("Generate Comment")
 
-# ---------- GENERATE COMMENT ----------
 if submitted and name:
     st.session_state['current_pronouns'] = get_pronouns(gender)
-    st.session_state['current_student'] = {
-        'name': name,
-        'att': att,
-        'read': read,
-        'write': write,
-        'read_t': read_t,
-        'write_t': write_t,
-        'attitude_target': attitude_target
-    }
-    st.session_state['current_variant'] = 0
+    st.session_state['current_variant'] = 0  # start with first variant
     st.session_state['current_comment'] = generate_comment(
         name, att, read, write, read_t, write_t,
         st.session_state['current_pronouns'],
-        attitude_target,
+        attitude_target=attitude_target,
         variant=st.session_state['current_variant']
     )
 
-# ---------- COMMENT DISPLAY ----------
+# Editable comment field
 if st.session_state['current_comment']:
-    v_num = (st.session_state['current_variant'] % MAX_VARIANTS) + 1
-    comment_text = f"{st.session_state['current_student']['name']} (Variant {v_num}): {st.session_state['current_comment']}"
-    st.text_area("Generated Comment", value=comment_text, height=200)
+    st.text_area(
+        "Generated Comment",
+        value=st.session_state['current_comment'],
+        height=200
+    )
     st.write(f"Character count (including spaces): {len(st.session_state['current_comment'])} / {TARGET_CHARS}")
 
-# ---------- VARY COMMENT BUTTON ----------
-if st.session_state['current_comment'] and st.button("Vary Comment"):
-    st.session_state['current_variant'] += 1
-    cs = st.session_state['current_student']
-    st.session_state['current_comment'] = generate_comment(
-        cs['name'], cs['att'], cs['read'], cs['write'],
-        cs['read_t'], cs['write_t'],
-        st.session_state['current_pronouns'],
-        attitude_target=cs['attitude_target'],
-        variant=st.session_state['current_variant']
-    )
-    st.experimental_rerun()
+# Vary comment button
+if st.button("Vary Comment"):
+    if st.session_state['current_comment']:
+        st.session_state['current_variant'] += 1
+        st.session_state['current_comment'] = generate_comment(
+            name, att, read, write, read_t, write_t,
+            st.session_state['current_pronouns'],
+            attitude_target=attitude_target,
+            variant=st.session_state['current_variant']
+        )
 
-# ---------- ADD ANOTHER COMMENT ----------
-if st.session_state['current_comment'] and st.button("Add Another Comment"):
-    cs = st.session_state['current_student']
-    v_num = (st.session_state['current_variant'] % MAX_VARIANTS) + 1
-    st.session_state['all_comments'].append(
-        f"{cs['name']} (Variant {v_num}): {st.session_state['current_comment']}"
-    )
-    st.session_state['current_comment'] = ""
-    st.session_state['current_student'] = {}
-    st.session_state['current_variant'] = 0
+# Add comment to full report
+if st.button("Add Comment to Report"):
+    if st.session_state['current_comment']:
+        st.session_state['all_comments'].append(st.session_state['current_comment'])
+        st.session_state['current_comment'] = ""
+        st.session_state['current_variant'] = 0
 
-# ---------- DOWNLOAD FULL REPORT ----------
+# Download full report
 if st.session_state['all_comments']:
     if st.button("Download Full Report (Word)"):
         doc = Document()
@@ -178,7 +163,7 @@ if st.session_state['all_comments']:
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-# ---------- SHOW ALL COMMENTS SO FAR ----------
+# Show all comments
 if st.session_state['all_comments']:
     st.markdown("### All Generated Comments:")
     for c in st.session_state['all_comments']:
