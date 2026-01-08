@@ -7,7 +7,7 @@ import streamlit as st
 from docx import Document
 import io
 
-# Import all statements from statements.py
+# Import all text banks from statements.py
 from statements import (
     opening_phrases,
     attitude_bank,
@@ -40,17 +40,23 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-# ---------- COMMENT GENERATION ----------
+def choose_phrase(bank, key):
+    """Return a random phrase from the bank, or the string itself if not a list"""
+    phrases = bank[key]
+    if isinstance(phrases, list):
+        return random.choice(phrases)
+    return phrases
+
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
-    # Pick a random phrase if there are multiple options
-    att_phrase = random.choice(attitude_bank[att]) if isinstance(attitude_bank[att], list) else attitude_bank[att]
-    read_phrase = random.choice(reading_bank[read]) if isinstance(reading_bank[read], list) else reading_bank[read]
-    write_phrase = random.choice(writing_bank[write]) if isinstance(writing_bank[write], list) else writing_bank[write]
-    read_target_phrase = random.choice(reading_target_bank[read_t]) if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
-    write_target_phrase = random.choice(writing_target_bank[write_t]) if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
+    # pick random phrase if it’s a list
+    att_phrase = choose_phrase(attitude_bank, att)
+    read_phrase = choose_phrase(reading_bank, read)
+    write_phrase = choose_phrase(writing_bank, write)
+    read_target_phrase = choose_phrase(reading_target_bank, read_t)
+    write_target_phrase = choose_phrase(writing_target_bank, write_t)
 
     attitude_sentence = f"{opening} {name} {att_phrase}."
     reading_sentence = f"In reading, {p} {read_phrase}."
@@ -58,7 +64,7 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
 
-    # Optional attitude target
+    # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
 
     closer_sentence = random.choice(closer_bank)
@@ -89,11 +95,11 @@ if 'all_comments' not in st.session_state:
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
-    att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40])
-    read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40])
-    write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
-    read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
-    write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
+    att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40,0])
+    read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40,0])
+    write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40,0])
+    read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40,35])
+    write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40,35])
     
     # Optional attitude next steps
     attitude_target = st.text_input("Optional Attitude Next Steps")
