@@ -34,11 +34,18 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
-    attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
-    reading_sentence = f"In reading, {p} {reading_bank[read]}."
-    writing_sentence = f"In writing, {p} {writing_bank[write]}."
-    reading_target_sentence = f"For the next term, {p} should {lowercase_first(reading_target_bank[read_t])}."
-    writing_target_sentence = f"In addition, {p} should {lowercase_first(writing_target_bank[write_t])}."
+    # pick random phrase if it’s a list
+att_phrase = random.choice(attitude_bank[att]) if isinstance(attitude_bank[att], list) else attitude_bank[att]
+read_phrase = random.choice(reading_bank[read]) if isinstance(reading_bank[read], list) else reading_bank[read]
+write_phrase = random.choice(writing_bank[write]) if isinstance(writing_bank[write], list) else writing_bank[write]
+read_target_phrase = random.choice(reading_target_bank[read_t]) if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
+write_target_phrase = random.choice(writing_target_bank[write_t]) if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
+
+attitude_sentence = f"{opening} {name} {att_phrase}."
+reading_sentence = f"In reading, {p} {read_phrase}."
+writing_sentence = f"In writing, {p} {write_phrase}."
+reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
+writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
     
     # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
