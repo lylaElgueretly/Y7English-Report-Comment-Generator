@@ -1,277 +1,279 @@
-# =========================================
-# STATEMENTS BANKS
+# statements.py
 # This file contains ONLY text banks (no logic)
-# Each band has 3 variants for Vary button functionality
-# =========================================
 
+# ---------- OPENING PHRASES ----------
 opening_phrases = [
     "This term,",
     "Over the course of this term,",
     "During this term,",
+    "Throughout this term,",
+    "In this term,",
+    "Over the past term,"
 ]
 
+# ---------- ACHIEVEMENT BANKS (3 variants each) ----------
 attitude_bank = {
     90: [
         "approached learning with enthusiasm and confidence, showing independence and curiosity",
         "demonstrated exceptional engagement and curiosity in class activities",
-        "showed consistent excellence and motivation throughout tasks"
+        "showed outstanding commitment and eagerness to learn independently"
     ],
     85: [
         "demonstrated a highly positive and motivated attitude towards learning",
-        "participated actively and consistently showed enthusiasm",
-        "engaged well with tasks and demonstrated motivation"
+        "approached lessons with strong focus and positive engagement",
+        "consistently showed interest and active participation in class"
     ],
     80: [
         "showed a positive and motivated attitude towards learning and participated confidently",
-        "completed tasks with enthusiasm and care",
-        "demonstrated good engagement with classroom activities"
+        "engaged well in lessons and contributed positively",
+        "responded well to challenges and participated actively"
     ],
     75: [
         "showed consistent effort and engaged well in class activities",
-        "worked steadily and followed instructions well",
-        "maintained regular effort throughout lessons"
+        "followed class activities attentively and made steady progress",
+        "participated regularly and demonstrated reliable effort"
     ],
     70: [
         "was generally focused and responded well to guidance",
-        "participated when prompted and followed instructions",
-        "needed occasional reminders to stay on task"
+        "followed instructions and contributed appropriately",
+        "showed reasonable engagement with support"
     ],
     65: [
         "showed a steady approach to learning but benefited from encouragement",
-        "responded positively with guidance",
-        "completed tasks with some support"
+        "required occasional prompting to stay on task",
+        "worked steadily with support from the teacher"
     ],
     60: [
         "required support to remain focused and engaged in lessons",
-        "needed reminders to participate and stay on task",
-        "benefited from additional guidance"
+        "needed frequent guidance to participate effectively",
+        "struggled to remain on task without support"
     ],
     55: [
         "needed regular guidance to remain engaged and confident",
-        "relied on teacher support for tasks",
-        "required consistent prompts to stay involved"
+        "depended on reminders to complete tasks",
+        "required consistent assistance to stay involved"
     ],
     40: [
         "found it challenging to stay focused and required consistent encouragement",
-        "struggled to engage without frequent support",
-        "needed sustained guidance to complete tasks"
+        "struggled with concentration and needed motivation",
+        "required ongoing prompting to engage in activities"
     ],
     0: [
         "required significant support to engage confidently in learning",
-        "was unable to participate independently",
-        "needed intensive help to complete tasks"
+        "was largely dependent on teacher support to participate",
+        "struggled significantly to complete tasks independently"
     ]
 }
 
 reading_bank = {
     90: [
-        "understood texts and made insightful interpretations",
         "demonstrated deep comprehension and interpretation skills",
-        "analysed texts with confidence and accuracy"
+        "understood texts and made insightful interpretations",
+        "analysed texts with thorough understanding and clarity"
     ],
     85: [
         "understood texts confidently and made strong interpretations",
-        "interpreted key points with clarity",
-        "showed secure understanding of texts"
+        "demonstrated good comprehension and interpretive skills",
+        "read texts accurately and identified key points"
     ],
     80: [
         "understood texts confidently and interpreted key points",
-        "made logical interpretations of texts",
-        "summarised key ideas effectively"
+        "interpreted key ideas with reasonable understanding",
+        "demonstrated comprehension of main points"
     ],
     75: [
         "understood texts securely and identified key ideas",
-        "could identify main points and details",
-        "summarised key information with support"
+        "picked out main ideas from texts with confidence",
+        "showed clear understanding of essential points"
     ],
     70: [
         "understood main ideas in texts with some support",
-        "identified some details with guidance",
-        "needed support to understand key ideas"
+        "identified main ideas when prompted",
+        "showed developing understanding of text content"
     ],
     65: [
         "identified key points in texts with guidance",
-        "relied on help to recognise main ideas",
-        "followed simple text instructions with support"
+        "needed help to highlight main ideas",
+        "showed basic understanding of text with support"
     ],
     60: [
         "showed basic understanding of texts with support",
-        "recognised familiar ideas with guidance",
-        "needed help to comprehend simple information"
+        "relied on guidance to comprehend texts",
+        "understood simple passages with help"
     ],
     55: [
         "understood simple information in texts",
-        "could read basic sentences with support",
-        "needed guidance to extract meaning"
+        "read simple texts with comprehension",
+        "needed support to understand straightforward passages"
     ],
     40: [
         "understood texts with support",
-        "required help to grasp basic ideas",
-        "relied on teacher for comprehension"
+        "relied heavily on guidance to interpret texts",
+        "struggled with comprehension without help"
     ],
     0: [
         "recognised familiar words but needed significant support to understand texts",
-        "could not interpret text without constant guidance",
-        "needed intensive support to access texts"
+        "had difficulty understanding texts independently",
+        "required extensive help to make sense of texts"
     ]
 }
 
 writing_bank = {
     90: [
-        "expressed ideas clearly using varied vocabulary and sentence structures",
         "wrote with excellent clarity and creativity",
-        "demonstrated mastery in written expression"
+        "expressed ideas clearly using varied vocabulary and sentence structures",
+        "produced sophisticated written work with flair"
     ],
     85: [
         "wrote confidently using varied sentences and well-chosen vocabulary",
-        "produced well-structured writing with good vocabulary",
-        "showed clear organisation and effective word choice"
+        "crafted clear and well-structured writing",
+        "expressed ideas with strong sentence control"
     ],
     80: [
         "wrote structured pieces with appropriate vocabulary",
-        "used sentences clearly to communicate ideas",
-        "presented ideas logically in writing"
+        "produced coherent paragraphs with suitable words",
+        "demonstrated logical organisation in writing"
     ],
     75: [
         "wrote organised paragraphs with suitable vocabulary",
-        "structured work coherently with some detail",
-        "showed clear thought in paragraph writing"
+        "showed clear paragraph structure and sentence control",
+        "expressed ideas in a structured way"
     ],
     70: [
         "wrote clear sentences and simple paragraphs",
-        "communicated ideas simply but correctly",
-        "expressed main points in sentences"
+        "produced understandable sentences with some organisation",
+        "wrote basic paragraphs and sentences clearly"
     ],
     65: [
         "wrote simple sentences with some organisation",
-        "needed guidance to structure writing",
-        "formed basic sentences with some support"
+        "produced short sentences that conveyed ideas",
+        "wrote basic ideas with minimal structure"
     ],
     60: [
         "wrote short sentences with support",
-        "struggled to extend sentences without help",
-        "needed prompts to write basic ideas"
+        "needed help to structure sentences",
+        "produced very simple written work"
     ],
     55: [
         "structured simple written responses",
-        "required guidance for organisation of writing",
-        "needed help to complete basic sentences"
+        "needed guidance to write coherent sentences",
+        "relied on templates to write simple responses"
     ],
     40: [
         "expressed ideas with support",
-        "needed help to convey meaning",
-        "relied on prompts to form sentences"
+        "needed support to form sentences",
+        "wrote short phrases with teacher guidance"
     ],
     0: [
         "required significant support to form sentences in writing",
-        "unable to produce writing independently",
-        "needed intensive help for basic written expression"
+        "could not write without substantial help",
+        "needed full support to complete writing tasks"
     ]
 }
 
 reading_target_bank = {
     90: [
         "explore subtler inferences and interpret multiple perspectives to deepen analysis",
-        "analyse texts considering different viewpoints for richer understanding",
-        "apply critical thinking to interpret complex texts"
+        "extend inference skills and consider alternative perspectives in texts",
+        "analyse texts with deeper interpretation and explore multiple viewpoints"
     ],
     85: [
         "extend inference skills and examine alternative interpretations",
-        "practise drawing conclusions from textual evidence",
-        "develop deeper interpretation strategies"
+        "focus on recognising subtler implications in texts",
+        "practice interpreting texts with guidance and identify multiple perspectives"
     ],
     80: [
         "focus on recognising subtler implications and supporting ideas with evidence",
-        "analyse implied meanings with guidance",
-        "identify key details and explain them logically"
+        "identify implied ideas and provide textual evidence",
+        "develop analysis of key points with examples"
     ],
     75: [
         "practice identifying hidden meanings and making connections within the text",
-        "connect ideas across texts",
-        "look for underlying messages and relationships in texts"
+        "summarise main points and relate them to context",
+        "focus on connecting ideas in texts"
     ],
     70: [
         "work on identifying implied ideas and summarising main points",
-        "develop skills in summarising key ideas",
-        "recognise basic implied content"
+        "focus on extracting main ideas with minimal support",
+        "develop skills in identifying key concepts"
     ],
     65: [
         "focus on reading for meaning and noting key details",
-        "pay attention to main points",
-        "identify and note important details"
+        "highlight key information from texts",
+        "practice reading comprehension with guidance"
     ],
     60: [
         "strengthen comprehension by paraphrasing and asking questions about the text",
-        "re-read texts to clarify understanding",
-        "use questioning strategies to improve comprehension"
+        "practice understanding texts through questioning",
+        "develop comprehension by summarising passages"
     ],
     55: [
         "build vocabulary and re-read to clarify meaning",
-        "practice simple comprehension tasks",
-        "identify key words with support"
+        "practice decoding words and understanding meaning",
+        "reinforce comprehension through repeated reading"
     ],
     40: [
         "identify key events and main points with guided support",
-        "follow instructions to note main ideas",
-        "sequence simple events from text"
+        "read and note main points with help",
+        "highlight important events with guidance"
     ],
     35: [
         "begin with guided reading and discussion to identify basic ideas",
-        "participate in simple guided comprehension tasks",
-        "listen and note main points"
+        "start identifying main ideas with support",
+        "follow guided activities to extract simple points"
     ]
 }
 
 writing_target_bank = {
     90: [
         "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
-        "develop complex narratives with multiple layers and rich detail",
-        "refine style to include varied sentence structures and imagery"
+        "refine vocabulary and explore complex sentence structures for impact",
+        "focus on advanced narrative techniques and character portrayal"
     ],
     85: [
         "refine vocabulary and explore more varied sentence structures for impact",
-        "improve word choice and sentence variety",
-        "develop more creative ways to express ideas"
+        "add detail to sentences and vary sentence beginnings",
+        "practice more sophisticated vocabulary use"
     ],
     80: [
         "focus on precise sensory words and 'showing' character emotions",
-        "use descriptive vocabulary effectively",
-        "add clear expression of character feelings"
+        "enhance descriptive writing with details",
+        "practice showing emotions through writing"
     ],
     75: [
         "add more sensory details and actions that reveal character traits",
-        "use small actions to show character personality",
-        "enhance writing with descriptive actions"
+        "practice adding descriptive actions to characters",
+        "improve imagery and detail in sentences"
     ],
     70: [
         "replace 'telling' statements with descriptive or action-based sentences",
-        "show rather than tell in writing",
-        "use description to clarify actions and emotions"
+        "work on showing rather than telling in writing",
+        "practice writing sentences that describe actions"
     ],
     65: [
         "include adjectives, vivid verbs, and sensory details to enhance imagery",
-        "focus on adding colourful words and phrases",
-        "practice using vivid language in sentences"
+        "add descriptive words to make writing vivid",
+        "practice enriching sentences with details"
     ],
     60: [
         "focus on including at least one sensory detail per paragraph",
-        "add small descriptive phrases to improve writing",
-        "highlight key ideas with descriptive words"
+        "add one descriptive element to each paragraph",
+        "practice inserting sensory details in writing"
     ],
     55: [
         "use sentence starters and story maps to add detail",
-        "organise thoughts with guided prompts",
-        "structure ideas clearly with support"
+        "organise sentences with planning tools",
+        "practice structured sentence writing"
     ],
     40: [
         "begin with simple sentences describing events and character feelings",
-        "write basic sentences about events",
-        "describe simple actions or emotions"
+        "write basic sentences about actions and feelings",
+        "practice simple descriptive writing"
     ],
     35: [
         "start by sequencing events and describing one action per sentence",
-        "use step-by-step writing prompts",
-        "write short sentences in order"
+        "practice ordering events in writing",
+        "write step-by-step actions in sentences"
     ]
 }
 
