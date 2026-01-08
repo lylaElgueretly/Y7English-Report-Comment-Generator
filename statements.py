@@ -1,5 +1,9 @@
 # statements.py
 
+# =========================================
+# English Report Comment Generator Statements
+# =========================================
+
 # Opening phrases
 opening_phrases = [
     "This term,",
@@ -8,7 +12,7 @@ opening_phrases = [
     "Throughout this term,"
 ]
 
-# Attitude bank (key = band, value = list of 3 variants)
+# Attitude bank: 3 variants per band
 attitude_bank = {
     90: [
         "approached learning with enthusiasm and confidence, showing independence and curiosity",
@@ -62,8 +66,70 @@ attitude_bank = {
     ]
 }
 
-# Similarly update reading_bank, writing_bank, reading_target_bank, writing_target_bank
-# Each with 3 variants per band (for brevity, not all shown here)
+# Reading bank: 3 variants per band
+reading_bank = {
+    90: [
+        "understood texts and made insightful interpretations",
+        "demonstrated deep comprehension and interpretation skills",
+        "interpreted texts thoughtfully and accurately"
+    ],
+    85: [
+        "understood texts confidently and made strong interpretations",
+        "interpreted texts accurately and with understanding",
+        "showed good comprehension and reasoning"
+    ],
+    80: [
+        "understood texts confidently and interpreted key points",
+        "identified key ideas and interpreted them correctly",
+        "showed secure understanding of texts"
+    ]
+    # ... continue for other bands (75, 70, etc.)
+}
+
+# Writing bank: 3 variants per band
+writing_bank = {
+    90: [
+        "expressed ideas clearly using varied vocabulary and sentence structures",
+        "wrote with excellent clarity and creativity",
+        "produced structured and sophisticated written work"
+    ],
+    85: [
+        "wrote confidently using varied sentences and well-chosen vocabulary",
+        "expressed ideas clearly in structured writing",
+        "produced engaging written work"
+    ]
+    # ... continue for other bands
+}
+
+# Reading target bank: 3 variants per band
+reading_target_bank = {
+    90: [
+        "explore subtler inferences and interpret multiple perspectives to deepen analysis",
+        "develop a nuanced understanding of texts and draw sophisticated conclusions",
+        "analyse texts critically, considering alternative viewpoints"
+    ],
+    85: [
+        "extend inference skills and examine alternative interpretations",
+        "practise deeper analysis of texts and ideas",
+        "consider multiple perspectives when interpreting texts"
+    ]
+    # ... continue for other bands
+}
+
+# Writing target bank: 3 variants per band
+writing_target_bank = {
+    90: [
+        "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
+        "refine vocabulary and sentence structures for stronger impact",
+        "explore creative techniques to enhance writing style"
+    ],
+    85: [
+        "focus on precise sensory words and 'showing' character emotions",
+        "add more varied sentence structures to writing",
+        "enhance writing clarity and creativity"
+    ]
+    # ... continue for other bands
+}
 
 # Closer phrases
 closer_bank = [
