@@ -1,116 +1,165 @@
+# report_generator_app.py
 # =========================================
-# STATEMENTS BANKS FOR ENGLISH REPORT GENERATOR
-# Each skill has 3 separate banks for Variants 1, 2, 3
+# ENGLISH REPORT COMMENT GENERATOR - Streamlit Version
 # =========================================
 
-# ---------- OPENING PHRASES ----------
-opening_phrases = [
-    "This term,",
-    "Over the course of this term,",
-    "During this term,",
-    "Throughout this term,",
-    "In this term,",
-    "Over the past term,"
-]
+import random
+import streamlit as st
+from docx import Document
+import io
+from statements import (
+    opening_phrases,
+    attitude_bank,
+    reading_bank,
+    writing_bank,
+    reading_target_bank,
+    writing_target_bank,
+    closer_bank
+)
 
-# ---------- ATTITUDE BANKS ----------
-attitude_bank1 = {
-    90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
-    85: "demonstrated a highly positive and motivated attitude towards learning",
-    80: "showed a positive and motivated attitude towards learning and participated confidently"
-}
+TARGET_CHARS = 499  # target character count including spaces
+MAX_VARIANTS = 3  # we have 3 variants per bank
 
-attitude_bank2 = {
-    90: "demonstrated exceptional engagement and curiosity in class activities",
-    85: "was consistently motivated and keen to explore new ideas",
-    80: "participated actively and responded well to challenges"
-}
+# ---------- HELPERS ----------
+def get_pronouns(gender):
+    gender = gender.lower()
+    if gender == "male":
+        return "he", "his"
+    elif gender == "female":
+        return "she", "her"
+    return "they", "their"
 
-attitude_bank3 = {
-    90: "maintained focus and showed initiative in learning tasks",
-    85: "was attentive and showed steady effort in lessons",
-    80: "engaged with tasks and followed guidance effectively"
-}
+def lowercase_first(text):
+    return text[0].lower() + text[1:] if text else ""
 
-# ---------- READING BANKS ----------
-reading_bank1 = {
-    90: "understood texts and made insightful interpretations",
-    85: "understood texts confidently and made strong interpretations",
-    80: "understood texts confidently and interpreted key points"
-}
+def truncate_comment(comment, target=TARGET_CHARS):
+    if len(comment) <= target:
+        return comment
+    truncated = comment[:target].rstrip(" ,;.")
+    if "." in truncated:
+        truncated = truncated[:truncated.rfind(".")+1]
+    return truncated
 
-reading_bank2 = {
-    90: "demonstrated deep comprehension and interpretation skills",
-    85: "interpreted key ideas accurately and thoughtfully",
-    80: "understood main ideas with clear reasoning"
-}
+def pick_phrase(bank, band, variant):
+    """Pick variant from bank safely"""
+    variants = bank[band]
+    index = (variant - 1) % len(variants)
+    return variants[index]
 
-reading_bank3 = {
-    90: "identified key points in texts and drew connections",
-    85: "summarised information accurately and effectively",
-    80: "recognised main ideas with some guidance"
-}
+def generate_comment(name, att, read, write, read_t, write_t, pronouns, variant=1, attitude_target=None):
+    p, p_poss = pronouns
+    opening = random.choice(opening_phrases)
 
-# ---------- WRITING BANKS ----------
-writing_bank1 = {
-    90: "expressed ideas clearly using varied vocabulary and sentence structures",
-    85: "wrote confidently using varied sentences and well-chosen vocabulary",
-    80: "wrote structured pieces with appropriate vocabulary"
-}
+    att_phrase = pick_phrase(attitude_bank, att, variant)
+    read_phrase = pick_phrase(reading_bank, read, variant)
+    write_phrase = pick_phrase(writing_bank, write, variant)
+    read_target_phrase = pick_phrase(reading_target_bank, read_t, variant)
+    write_target_phrase = pick_phrase(writing_target_bank, write_t, variant)
 
-writing_bank2 = {
-    90: "wrote with excellent clarity and creativity",
-    85: "produced well-structured and imaginative writing",
-    80: "organized ideas effectively in writing"
-}
+    attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
 
-writing_bank3 = {
-    90: "expressed ideas clearly using actions and descriptions",
-    85: "used clear sentences with descriptive words",
-    80: "wrote simple, organised sentences"
-}
+    comment_parts = [
+        f"{opening} {name} {att_phrase}.{attitude_target_sentence}",
+        f"In reading, {p} {read_phrase}.",
+        f"In writing, {p} {write_phrase}.",
+        f"For the next term, {p} should {lowercase_first(read_target_phrase)}.",
+        f"In addition, {p} should {lowercase_first(write_target_phrase)}.",
+        random.choice(closer_bank)
+    ]
 
-# ---------- READING TARGET BANKS ----------
-reading_target_bank1 = {
-    90: "explore subtler inferences and interpret multiple perspectives to deepen analysis",
-    85: "extend inference skills and examine alternative interpretations",
-    80: "focus on recognising subtler implications and supporting ideas with evidence"
-}
+    comment = " ".join(comment_parts)
+    comment = truncate_comment(comment, TARGET_CHARS)
+    return comment
 
-reading_target_bank2 = {
-    90: "develop critical reading and interpret hidden meanings in texts",
-    85: "practice identifying hidden meanings and making connections",
-    80: "work on summarising main points and identifying implied ideas"
-}
+# ---------- STREAMLIT APP ----------
+st.title("English Report Comment Generator (~499 chars)")
+st.markdown(
+    "Fill in the student details and click **Generate Comment**. "
+    "Use **Vary Comment** to cycle variants. You can add multiple students before downloading the full report."
+)
 
-reading_target_bank3 = {
-    90: "strengthen comprehension by paraphrasing and discussing key points",
-    85: "focus on reading for meaning and noting essential details",
-    80: "begin with guided reading and discussion to identify ideas"
-}
+# ---------- SESSION STATE ----------
+if 'all_comments' not in st.session_state:
+    st.session_state['all_comments'] = []
 
-# ---------- WRITING TARGET BANKS ----------
-writing_target_bank1 = {
-    90: "experiment with subtle suspense, varied perspectives, and advanced sensory effects",
-    85: "refine vocabulary and explore more varied sentence structures for impact",
-    80: "focus on precise sensory words and 'showing' character emotions"
-}
+if 'current_variant' not in st.session_state:
+    st.session_state['current_variant'] = 1
 
-writing_target_bank2 = {
-    90: "enhance creativity by exploring different narrative techniques",
-    85: "practice adding more detail and variety to writing",
-    80: "work on improving sentence structure and descriptive language"
-}
+if 'current_pronouns' not in st.session_state:
+    st.session_state['current_pronouns'] = ("they", "their")
 
-writing_target_bank3 = {
-    90: "focus on including vivid verbs and sensory details",
-    85: "use adjectives and descriptive sentences to enhance imagery",
-    80: "practice sequencing events and describing actions clearly"
-}
+# ---------- FORM ----------
+with st.form("report_form"):
+    name = st.text_input("Student Name")
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    att = st.selectbox("Attitude band", [90,85,80,75,70,65,60,55,40])
+    read = st.selectbox("Reading achievement band", [90,85,80,75,70,65,60,55,40])
+    write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
+    read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
+    write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
+    attitude_target = st.text_input("Optional Attitude Next Steps")
 
-# ---------- CLOSER BANK ----------
-closer_bank = [
-    "Overall, progress was evident over the course of the term",
-    "With continued support, further progress is expected next term",
-    "Confidence improved gradually as the term progressed"
-]
+    submitted = st.form_submit_button("Generate Comment")
+
+# ---------- GENERATE COMMENT ----------
+if submitted and name:
+    st.session_state['current_pronouns'] = get_pronouns(gender)
+    st.session_state['current_variant'] = 1
+    comment = generate_comment(
+        name, att, read, write, read_t, write_t,
+        st.session_state['current_pronouns'],
+        variant=st.session_state['current_variant'],
+        attitude_target=attitude_target
+    )
+    st.session_state['current_comment'] = comment
+
+# ---------- SHOW GENERATED COMMENT ----------
+if 'current_comment' in st.session_state and st.session_state['current_comment']:
+    st.markdown("### Generated Comment")
+    st.write(f"{name} (Variant {st.session_state['current_variant']}): {st.session_state['current_comment']}")
+    st.write(f"Character count (including spaces): {len(st.session_state['current_comment'])} / {TARGET_CHARS}")
+
+    # ---------- VARY COMMENT ----------
+    if st.button("Vary Comment"):
+        st.session_state['current_variant'] += 1
+        if st.session_state['current_variant'] > MAX_VARIANTS:
+            st.session_state['current_variant'] = MAX_VARIANTS  # do not exceed max
+        st.session_state['current_comment'] = generate_comment(
+            name, att, read, write, read_t, write_t,
+            st.session_state['current_pronouns'],
+            variant=st.session_state['current_variant'],
+            attitude_target=attitude_target
+        )
+        st.experimental_rerun()
+
+    # ---------- ADD COMMENT ----------
+    if st.button("Add Another Comment"):
+        st.session_state['all_comments'].append(
+            f"{name} (Variant {st.session_state['current_variant']}): {st.session_state['current_comment']}"
+        )
+        # Reset for next student
+        st.session_state['current_comment'] = ""
+        st.session_state['current_variant'] = 1
+        st.experimental_rerun()
+
+# ---------- DOWNLOAD FULL REPORT ----------
+if st.session_state['all_comments']:
+    if st.button("Download Full Report (Word)"):
+        doc = Document()
+        for c in st.session_state['all_comments']:
+            doc.add_paragraph(c)
+        file_stream = io.BytesIO()
+        doc.save(file_stream)
+        file_stream.seek(0)
+        st.download_button(
+            label="Download Word File",
+            data=file_stream,
+            file_name="English_Report_Comments.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+# ---------- SHOW ALL COMMENTS SO FAR ----------
+if st.session_state['all_comments']:
+    st.markdown("### All Added Comments:")
+    for c in st.session_state['all_comments']:
+        st.write(c)
