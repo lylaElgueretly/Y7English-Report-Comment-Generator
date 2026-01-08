@@ -103,14 +103,19 @@ with st.form("report_form"):
 
     submitted = st.form_submit_button("Generate Comment")
 
-# Generate comment if submitted
+# ---------- HANDLE COMMENT GENERATION ----------
 if submitted and name:
     pronouns = get_pronouns(gender)
-    comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target)
-    edited_comment = st.text_area("Generated Comment (editable)", value=comment, height=200)
+    st.session_state['current_comment'] = generate_comment(
+        name, att, read, write, read_t, write_t, pronouns, attitude_target
+    )
+
+# Display current comment
+if 'current_comment' in st.session_state:
+    edited_comment = st.text_area("Generated Comment (editable)", value=st.session_state['current_comment'], height=200)
     st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
 
-    # Save to session state
+    # Save comment button
     if st.button("Save Comment"):
         st.session_state['all_comments'].append(f"{name}: {edited_comment}")
         st.success("Comment saved!")
@@ -118,10 +123,18 @@ if submitted and name:
 # ---------- VARY BUTTON ----------
 if st.button("Vary"):
     st.session_state['variant_counter'] += 1
-    st.experimental_rerun()
+    if 'current_comment' in st.session_state:
+        st.session_state['current_comment'] = generate_comment(
+            name, att, read, write, read_t, write_t, pronouns, attitude_target
+        )
 
 # ---------- ADD ANOTHER COMMENT BUTTON ----------
 if st.button("Add Another Comment"):
+    # Reset fields safely without rerun
+    for key in ['current_comment']:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.session_state['variant_counter'] = 0
     st.experimental_rerun()
 
 # ---------- DOWNLOAD FULL REPORT ----------
