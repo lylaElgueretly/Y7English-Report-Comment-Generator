@@ -44,7 +44,7 @@ if 'all_comments' not in st.session_state:
     st.session_state['all_comments'] = []
 
 if 'variant_counter' not in st.session_state:
-    st.session_state['variant_counter'] = 0  # default variant = 0 (first variation)
+    st.session_state['variant_counter'] = 0
 
 # ---------- COMMENT GENERATOR ----------
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
@@ -66,9 +66,7 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
 
-    # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
-
     closer_sentence = closer_bank[variant % len(closer_bank)]
 
     comment_parts = [
@@ -110,15 +108,10 @@ if submitted and name:
         name, att, read, write, read_t, write_t, pronouns, attitude_target
     )
 
-# Display current comment
+# Display current comment (read-only)
 if 'current_comment' in st.session_state:
-    edited_comment = st.text_area("Generated Comment (editable)", value=st.session_state['current_comment'], height=200)
-    st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
-
-    # Save comment button
-    if st.button("Save Comment"):
-        st.session_state['all_comments'].append(f"{name}: {edited_comment}")
-        st.success("Comment saved!")
+    st.markdown("### Generated Comment")
+    st.write(st.session_state['current_comment'])
 
 # ---------- VARY BUTTON ----------
 if st.button("Vary"):
@@ -130,12 +123,11 @@ if st.button("Vary"):
 
 # ---------- ADD ANOTHER COMMENT BUTTON ----------
 if st.button("Add Another Comment"):
-    # Reset fields safely without rerun
-    for key in ['current_comment']:
-        if key in st.session_state:
-            del st.session_state[key]
+    if 'current_comment' in st.session_state:
+        st.session_state['all_comments'].append(st.session_state['current_comment'])
     st.session_state['variant_counter'] = 0
-    st.experimental_rerun()
+    if 'current_comment' in st.session_state:
+        del st.session_state['current_comment']
 
 # ---------- DOWNLOAD FULL REPORT ----------
 if st.session_state['all_comments']:
@@ -157,6 +149,6 @@ if st.session_state['all_comments']:
 
 # ---------- SHOW ALL COMMENTS SO FAR ----------
 if st.session_state['all_comments']:
-    st.markdown("### All Generated Comments:")
+    st.markdown("### All Saved Comments:")
     for c in st.session_state['all_comments']:
         st.write(c)
