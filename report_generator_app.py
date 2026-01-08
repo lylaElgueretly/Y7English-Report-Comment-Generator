@@ -117,17 +117,18 @@ if st.session_state['current_comment']:
     st.write(f"Character count (including spaces): {len(st.session_state['current_comment'])} / {TARGET_CHARS}")
 
 # ---------- VARY COMMENT ----------
-if st.session_state['current_comment'] and st.button("Vary Comment"):
-    st.session_state['current_variant'] += 1
-    cs = st.session_state['current_student']
-    st.session_state['current_comment'] = generate_comment(
-        cs['name'], cs['att'], cs['read'], cs['write'],
-        cs['read_t'], cs['write_t'],
-        st.session_state['current_pronouns'],
-        attitude_target=cs['attitude_target'],
-        variant=st.session_state['current_variant']
-    )
-    st.experimental_rerun()
+if st.session_state.get('current_comment') and st.session_state.get('current_student'):
+    if st.button("Vary Comment"):
+        cs = st.session_state['current_student']
+        st.session_state['current_variant'] += 1
+        # generate new variant comment
+        st.session_state['current_comment'] = generate_comment(
+            cs['name'], cs['att'], cs['read'], cs['write'],
+            cs['read_t'], cs['write_t'],
+            st.session_state['current_pronouns'],
+            attitude_target=cs['attitude_target'],
+            variant=st.session_state['current_variant']
+        )
 
 # ---------- ADD ANOTHER COMMENT ----------
 if st.session_state['current_comment'] and st.button("Add Another Comment"):
