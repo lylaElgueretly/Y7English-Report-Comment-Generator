@@ -7,7 +7,7 @@ import streamlit as st
 from docx import Document
 import io
 
-# Import all the text banks from statements.py
+# Import all statements from statements.py
 from statements import (
     opening_phrases,
     attitude_bank,
@@ -40,12 +40,12 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-# ---------- GENERATE COMMENT ----------
+# ---------- COMMENT GENERATION ----------
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
-    # pick random phrase if multiple variations exist
+    # Pick a random phrase if there are multiple options
     att_phrase = random.choice(attitude_bank[att]) if isinstance(attitude_bank[att], list) else attitude_bank[att]
     read_phrase = random.choice(reading_bank[read]) if isinstance(reading_bank[read], list) else reading_bank[read]
     write_phrase = random.choice(writing_bank[write]) if isinstance(writing_bank[write], list) else writing_bank[write]
@@ -57,8 +57,8 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     writing_sentence = f"In writing, {p} {write_phrase}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
-    
-    # optional attitude target
+
+    # Optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
 
     closer_sentence = random.choice(closer_bank)
