@@ -6,6 +6,7 @@ import random
 import streamlit as st
 from docx import Document
 import io
+from statements import *  # <-- import your text banks
 
 TARGET_CHARS = 499  # target character count including spaces
 
@@ -24,9 +25,9 @@ def lowercase_first(text):
 def truncate_comment(comment, target=TARGET_CHARS):
     if len(comment) <= target:
         return comment
-    truncated = comment[:target].rstrip(" ,;.")
+    truncated = comment[:target].rstrip(" ,;.")  # remove dangling punctuation
     if "." in truncated:
-        truncated = truncated[:truncated.rfind(".")+1]
+        truncated = truncated[:truncated.rfind(".")+1]  # truncate at last full stop
     return truncated
 
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
@@ -39,9 +40,7 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(reading_target_bank[read_t])}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(writing_target_bank[write_t])}."
     
-    # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
-
     closer_sentence = random.choice(closer_bank)
 
     comment_parts = [
@@ -63,10 +62,11 @@ st.markdown(
     "Fill in the student details and click **Generate Comment**. You can add multiple students before downloading the full report."
 )
 
+# Initialize session state
 if 'all_comments' not in st.session_state:
     st.session_state['all_comments'] = []
 
-# Form for student details
+# ---------- STUDENT FORM ----------
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -76,47 +76,36 @@ with st.form("report_form"):
     read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
     
-    # Optional attitude next steps
     attitude_target = st.text_input("Optional Attitude Next Steps")
-
     submitted = st.form_submit_button("Generate Comment")
 
 if submitted and name:
     pronouns = get_pronouns(gender)
     comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target)
-    char_count = len(comment)
-
-    # Editable comment field
     edited_comment = st.text_area("Generated Comment (editable)", value=comment, height=200)
     st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
 
-    # Save to session state
-    st.session_state['all_comments'].append(f"{name}: {edited_comment}")
-
-    if st.button("Add Another Comment"):
-        st.experimental_rerun()
+    if st.button("Add Comment to Report"):
+        st.session_state['all_comments'].append(f"{name}: {edited_comment}")
+        st.success(f"Comment for {name} added.")
+        st.experimental_rerun()  # restart form to add next student
 
 # ---------- DOWNLOAD FULL REPORT ----------
-if st.session_state['all_comments']:
-    if st.button("Download Full Report (Word)"):
-        doc = Document()
-        for c in st.session_state['all_comments']:
-            doc.add_paragraph(c)
-        
-        # Use in-memory BytesIO
-        file_stream = io.BytesIO()
-        doc.save(file_stream)
-        file_stream.seek(0)
-
-        st.download_button(
-            label="Download Word File",
-            data=file_stream,
-            file_name="English_Report_Comments.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-
-# ---------- SHOW ALL COMMENTS SO FAR ----------
 if st.session_state['all_comments']:
     st.markdown("### All Generated Comments:")
     for c in st.session_state['all_comments']:
         st.write(c)
+
+    file_stream = io.BytesIO()
+    doc = Document()
+    for c in st.session_state['all_comments']:
+        doc.add_paragraph(c)
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    st.download_button(
+        label="Download Full Report (Word)",
+        data=file_stream,
+        file_name="English_Report_Comments.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
