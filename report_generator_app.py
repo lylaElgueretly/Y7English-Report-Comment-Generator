@@ -7,8 +7,18 @@ import streamlit as st
 from docx import Document
 import io
 
-TARGET_CHARS = 499  # target character count including spaces
+# Import all the text banks from statements.py
+from statements import (
+    opening_phrases,
+    attitude_bank,
+    reading_bank,
+    writing_bank,
+    reading_target_bank,
+    writing_target_bank,
+    closer_bank
+)
 
+TARGET_CHARS = 499  # target character count including spaces
 
 # ---------- HELPERS ----------
 def get_pronouns(gender):
@@ -30,22 +40,23 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
+# ---------- GENERATE COMMENT ----------
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
     p, p_poss = pronouns
     opening = random.choice(opening_phrases)
 
-    # pick random phrase if it’s a list
-att_phrase = random.choice(attitude_bank[att]) if isinstance(attitude_bank[att], list) else attitude_bank[att]
-read_phrase = random.choice(reading_bank[read]) if isinstance(reading_bank[read], list) else reading_bank[read]
-write_phrase = random.choice(writing_bank[write]) if isinstance(writing_bank[write], list) else writing_bank[write]
-read_target_phrase = random.choice(reading_target_bank[read_t]) if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
-write_target_phrase = random.choice(writing_target_bank[write_t]) if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
+    # pick random phrase if multiple variations exist
+    att_phrase = random.choice(attitude_bank[att]) if isinstance(attitude_bank[att], list) else attitude_bank[att]
+    read_phrase = random.choice(reading_bank[read]) if isinstance(reading_bank[read], list) else reading_bank[read]
+    write_phrase = random.choice(writing_bank[write]) if isinstance(writing_bank[write], list) else writing_bank[write]
+    read_target_phrase = random.choice(reading_target_bank[read_t]) if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
+    write_target_phrase = random.choice(writing_target_bank[write_t]) if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
 
-attitude_sentence = f"{opening} {name} {att_phrase}."
-reading_sentence = f"In reading, {p} {read_phrase}."
-writing_sentence = f"In writing, {p} {write_phrase}."
-reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
-writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
+    attitude_sentence = f"{opening} {name} {att_phrase}."
+    reading_sentence = f"In reading, {p} {read_phrase}."
+    writing_sentence = f"In writing, {p} {write_phrase}."
+    reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
+    writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
     
     # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
