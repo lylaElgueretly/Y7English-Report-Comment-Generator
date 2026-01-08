@@ -130,8 +130,15 @@ if submitted and name:
 
 # ---------- VARY COMMENT ----------
 if submitted and st.button("Vary Comment"):
+    # save current comment to session so it doesn't disappear
     st.session_state['current_variant'] += 1
+    st.session_state['current_comment'] = generate_comment(
+        name, att, write, write, read_t, write_t,
+        st.session_state['current_pronouns'], attitude_target,
+        variant=st.session_state['current_variant']
+    )
     st.experimental_rerun()
+
 
 # ---------- ADD COMMENT TO LIST ----------
 if submitted and st.button("Add Comment to List"):
