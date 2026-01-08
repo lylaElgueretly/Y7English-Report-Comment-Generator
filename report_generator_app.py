@@ -6,6 +6,7 @@ import random
 import streamlit as st
 from docx import Document
 import io
+
 from statements import (
     opening_phrases,
     attitude_bank,
@@ -38,30 +39,40 @@ def truncate_comment(comment, target=TARGET_CHARS):
         truncated = truncated[:truncated.rfind(".")+1]
     return truncated
 
-def generate_comment(name, att, read, write, read_t, write_t, pronouns, variation_index=0, attitude_target=None):
-    p, p_poss = pronouns
-    opening = random.choice(opening_phrases)
+# ---------- STATE ----------
+if 'all_comments' not in st.session_state:
+    st.session_state['all_comments'] = []
 
-    # pick phrase according to variation index
-    att_phrase = attitude_bank[att][variation_index % len(attitude_bank[att])]
-    read_phrase = reading_bank[read][variation_index % len(reading_bank[read])]
-    write_phrase = writing_bank[write][variation_index % len(writing_bank[write])]
-    read_target_phrase = reading_target_bank[read_t][variation_index % len(reading_target_bank[read_t])]
-    write_target_phrase = writing_target_bank[write_t][variation_index % len(writing_target_bank[write_t])]
+if 'variant_counter' not in st.session_state:
+    st.session_state['variant_counter'] = 0  # default variant = 0 (first variation)
+
+# ---------- COMMENT GENERATOR ----------
+def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target=None):
+    p, p_poss = pronouns
+    variant = st.session_state['variant_counter'] % 3  # cycle 0,1,2
+
+    opening = opening_phrases[variant % len(opening_phrases)]
+
+    # Pick variant phrase
+    att_phrase = attitude_bank[att][variant] if isinstance(attitude_bank[att], list) else attitude_bank[att]
+    read_phrase = reading_bank[read][variant] if isinstance(reading_bank[read], list) else reading_bank[read]
+    write_phrase = writing_bank[write][variant] if isinstance(writing_bank[write], list) else writing_bank[write]
+    read_target_phrase = reading_target_bank[read_t][variant] if isinstance(reading_target_bank[read_t], list) else reading_target_bank[read_t]
+    write_target_phrase = writing_target_bank[write_t][variant] if isinstance(writing_target_bank[write_t], list) else writing_target_bank[write_t]
 
     attitude_sentence = f"{opening} {name} {att_phrase}."
     reading_sentence = f"In reading, {p} {read_phrase}."
     writing_sentence = f"In writing, {p} {write_phrase}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
-    
+
     # optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
 
-    closer_sentence = random.choice(closer_bank)
+    closer_sentence = closer_bank[variant % len(closer_bank)]
 
     comment_parts = [
-        attitude_sentence + attitude_target_sentence,
+        f"{name} (Variant {variant+1}): " + attitude_sentence + attitude_target_sentence,
         reading_sentence,
         writing_sentence,
         reading_target_sentence,
@@ -76,14 +87,8 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, variatio
 # ---------- STREAMLIT APP ----------
 st.title("English Report Comment Generator (~499 chars)")
 st.markdown(
-    "Fill in the student details and click **Generate Comment**. Click **Vary Comment** to cycle through variants."
+    "Fill in the student details and click **Generate Comment**. Use **Vary** to cycle through variant statements."
 )
-
-if 'all_comments' not in st.session_state:
-    st.session_state['all_comments'] = []
-
-if 'variation_index' not in st.session_state:
-    st.session_state['variation_index'] = {}
 
 # Form for student details
 with st.form("report_form"):
@@ -94,73 +99,38 @@ with st.form("report_form"):
     write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
     read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
-    
-    # Optional attitude next steps
     attitude_target = st.text_input("Optional Attitude Next Steps")
 
     submitted = st.form_submit_button("Generate Comment")
 
-# Generate default comment
+# Generate comment if submitted
 if submitted and name:
     pronouns = get_pronouns(gender)
-    st.session_state['variation_index'][name] = 0
-    comment = generate_comment(
-        name, att, read, write, read_t, write_t, pronouns,
-        variation_index=st.session_state['variation_index'][name],
-        attitude_target=attitude_target
-    )
-    edited_comment = st.text_area(f"{name} (Variant 1)", value=comment, height=200)
+    comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target)
+    edited_comment = st.text_area("Generated Comment (editable)", value=comment, height=200)
+    st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
 
-    # Save to session
-    st.session_state['all_comments'].append({
-        "name": name,
-        "att": att,
-        "read": read,
-        "write": write,
-        "read_t": read_t,
-        "write_t": write_t,
-        "gender": gender,
-        "attitude_target": attitude_target,
-        "comment": edited_comment,
-        "variant": 1
-    })
+    # Save to session state
+    if st.button("Save Comment"):
+        st.session_state['all_comments'].append(f"{name}: {edited_comment}")
+        st.success("Comment saved!")
 
-# ---------- VARY COMMENT ----------
-if st.session_state['all_comments']:
-    for i, entry in enumerate(st.session_state['all_comments']):
-        if st.button(f"Vary Comment for {entry['name']}"):
-            # Increment variation index
-            name = entry['name']
-            pronouns = get_pronouns(entry['gender'])
-            st.session_state['variation_index'][name] += 1
-            var_index = st.session_state['variation_index'][name]
+# ---------- VARY BUTTON ----------
+if st.button("Vary"):
+    st.session_state['variant_counter'] += 1
+    st.experimental_rerun()
 
-            # Re-generate comment
-            new_comment = generate_comment(
-                name,
-                entry['att'],
-                entry['read'],
-                entry['write'],
-                entry['read_t'],
-                entry['write_t'],
-                pronouns,
-                variation_index=var_index,
-                attitude_target=entry['attitude_target']
-            )
-
-            # Update entry
-            entry['comment'] = new_comment
-            entry['variant'] = (var_index % 3) + 1  # show 1-3
-            st.experimental_rerun()
+# ---------- ADD ANOTHER COMMENT BUTTON ----------
+if st.button("Add Another Comment"):
+    st.experimental_rerun()
 
 # ---------- DOWNLOAD FULL REPORT ----------
 if st.session_state['all_comments']:
     if st.button("Download Full Report (Word)"):
         doc = Document()
         for c in st.session_state['all_comments']:
-            doc.add_paragraph(f"{c['name']} (Variant {c['variant']}): {c['comment']}")
-        
-        # Use in-memory BytesIO
+            doc.add_paragraph(c)
+
         file_stream = io.BytesIO()
         doc.save(file_stream)
         file_stream.seek(0)
@@ -176,4 +146,4 @@ if st.session_state['all_comments']:
 if st.session_state['all_comments']:
     st.markdown("### All Generated Comments:")
     for c in st.session_state['all_comments']:
-        st.write(f"{c['name']} (Variant {c['variant']}): {c['comment']}")
+        st.write(c)
