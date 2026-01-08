@@ -44,13 +44,12 @@ def pick_phrase(bank, key, variant):
     """Pick the correct variant from bank"""
     if key not in bank:
         return "No statement available"
-    # ensure variant cycles 0..MAX_VARIANTS-1
     variant_index = variant % MAX_VARIANTS
     return bank[key][variant_index]
 
 def generate_comment(name, att, read, write, read_t, write_t, pronouns, variant=0, attitude_target=None):
     p, p_poss = pronouns
-    opening = random.choice(opening_phrases[variant % len(opening_phrases)])
+    opening = random.choice(opening_phrases)
 
     # Pick phrases based on variant
     att_phrase = pick_phrase(attitude_bank, att, variant)
@@ -59,13 +58,12 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, variant=
     read_target_phrase = pick_phrase(reading_target_bank, read_t, variant)
     write_target_phrase = pick_phrase(writing_target_bank, write_t, variant)
 
-    attitude_sentence = f"{opening[0]} {name} {att_phrase}."
+    attitude_sentence = f"{opening} {name} {att_phrase}."
     reading_sentence = f"In reading, {p} {read_phrase}."
     writing_sentence = f"In writing, {p} {write_phrase}."
     reading_target_sentence = f"For the next term, {p} should {lowercase_first(read_target_phrase)}."
     writing_target_sentence = f"In addition, {p} should {lowercase_first(write_target_phrase)}."
     
-    # Optional attitude target
     attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
 
     closer_sentence = random.choice(closer_bank)
@@ -89,13 +87,11 @@ st.markdown(
     "Fill in the student details and click **Generate Comment**. You can vary the comment, add multiple students, and download the full report."
 )
 
-# Initialize session state
-if 'all_comments' not in st.session_state:
-    st.session_state['all_comments'] = []
-if 'current_variant' not in st.session_state:
-    st.session_state['current_variant'] = 0
-if 'current_pronouns' not in st.session_state:
-    st.session_state['current_pronouns'] = ("they", "their")
+# Initialize session state safely
+st.session_state.setdefault('all_comments', [])
+st.session_state.setdefault('current_variant', 0)
+st.session_state.setdefault('current_pronouns', ("they", "their"))
+st.session_state.setdefault('current_comment', "")
 
 # ---------- FORM ----------
 with st.form("report_form"):
@@ -121,28 +117,36 @@ if submitted and name:
     )
 
 # ---------- SHOW GENERATED COMMENT ----------
-if 'current_comment' in st.session_state and st.session_state['current_comment']:
+if st.session_state['current_comment']:
     st.text_area("Generated Comment", value=st.session_state['current_comment'], height=200)
     st.write(f"Character count (including spaces): {len(st.session_state['current_comment'])} / {TARGET_CHARS}")
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Vary Comment"):
-            st.session_state['current_variant'] = (st.session_state['current_variant'] + 1) % MAX_VARIANTS
-            st.experimental_rerun()
-    with col2:
-        if st.button("Add Comment"):
-            st.session_state['all_comments'].append(st.session_state['current_comment'])
-            # reset current comment and variant
-            st.session_state['current_comment'] = ""
-            st.session_state['current_variant'] = 0
-            st.experimental_rerun()
-    with col3:
-        if st.button("Clear All"):
-            st.session_state['all_comments'] = []
-            st.session_state['current_comment'] = ""
-            st.session_state['current_variant'] = 0
-            st.experimental_rerun()
+# ---------- BUTTONS ----------
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button("Vary Comment", key="vary_btn"):
+        st.session_state['current_variant'] = (st.session_state['current_variant'] + 1) % MAX_VARIANTS
+        st.session_state['current_comment'] = generate_comment(
+            name, att, read, write, read_t, write_t,
+            st.session_state['current_pronouns'],
+            variant=st.session_state['current_variant'],
+            attitude_target=attitude_target
+        )
+        st.experimental_rerun()
+
+with col2:
+    if st.button("Add Comment", key="add_btn"):
+        st.session_state['all_comments'].append(st.session_state['current_comment'])
+        st.session_state['current_comment'] = ""
+        st.session_state['current_variant'] = 0
+        st.experimental_rerun()
+
+with col3:
+    if st.button("Clear All", key="clear_btn"):
+        st.session_state['all_comments'] = []
+        st.session_state['current_comment'] = ""
+        st.session_state['current_variant'] = 0
+        st.experimental_rerun()
 
 # ---------- DOWNLOAD FULL REPORT ----------
 if st.session_state['all_comments']:
