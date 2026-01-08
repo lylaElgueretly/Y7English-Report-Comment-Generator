@@ -11,7 +11,10 @@ opening_phrases = [
 ]
 
 attitude_bank = {
-    90: "approached learning with enthusiasm and confidence, showing independence and curiosity",
+    90: 90: [
+    "approached learning with enthusiasm and confidence...",
+    "showed strong independence and curiosity in lessons..."
+]
     85: "demonstrated a highly positive and motivated attitude towards learning",
     80: "showed a positive and motivated attitude towards learning and participated confidently",
     75: "showed consistent effort and engaged well in class activities",
