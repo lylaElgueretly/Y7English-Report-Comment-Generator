@@ -5,19 +5,10 @@
 import random
 import streamlit as st
 from docx import Document
+import io
+from statements import *
 
-TARGET_CHARS = 499  # target character count including spaces
-
-from statements import (
-    opening_phrases,
-    attitude_bank,
-    reading_bank,
-    writing_bank,
-    reading_target_bank,
-    writing_target_bank,
-    closer_bank
-)
-
+TARGET_CHARS = 499
 
 # ---------- HELPERS ----------
 def get_pronouns(gender):
@@ -46,12 +37,10 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
     attitude_sentence = f"{opening} {name} {attitude_bank[att]}."
     reading_sentence = f"In reading, {p} {reading_bank[read]}."
     writing_sentence = f"In writing, {p} {writing_bank[write]}."
-    reading_target_sentence = f"For the next term, {p} should {lowercase_first(reading_target_bank[read_t])}."
-    writing_target_sentence = f"Additionally, {p} should {lowercase_first(writing_target_bank[write_t])}."
-    
-    # optional attitude target
-    attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
+    reading_target_sentence = f"For the next year, {p} should {lowercase_first(reading_target_bank[read_t])}."
+    writing_target_sentence = f"In addition, {p} should {lowercase_first(writing_target_bank[write_t])}."
 
+    attitude_target_sentence = f" {lowercase_first(attitude_target)}" if attitude_target else ""
     closer_sentence = random.choice(closer_bank)
 
     comment_parts = [
@@ -69,7 +58,6 @@ def generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude
 
 # ---------- STREAMLIT APP ----------
 st.title("English Report Comment Generator (~499 chars)")
-
 st.markdown(
     "Fill in the student details and click **Generate Comment**. You can add multiple students before downloading the full report."
 )
@@ -77,6 +65,7 @@ st.markdown(
 if 'all_comments' not in st.session_state:
     st.session_state['all_comments'] = []
 
+# ---------- STUDENT FORM ----------
 with st.form("report_form"):
     name = st.text_input("Student Name")
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -85,43 +74,39 @@ with st.form("report_form"):
     write = st.selectbox("Writing achievement band", [90,85,80,75,70,65,60,55,40])
     read_t = st.selectbox("Reading target band", [90,85,80,75,70,65,60,55,40])
     write_t = st.selectbox("Writing target band", [90,85,80,75,70,65,60,55,40])
-    
-    # optional attitude next steps
-    attitude_target = st.text_input("Optional Attitude Next Steps")
 
+    attitude_target = st.text_input("Optional Attitude Next Steps")
     submitted = st.form_submit_button("Generate Comment")
 
 if submitted and name:
     pronouns = get_pronouns(gender)
     comment = generate_comment(name, att, read, write, read_t, write_t, pronouns, attitude_target)
-    char_count = len(comment)
+    edited_comment = st.text_area("Generated Comment (editable)", value=comment, height=200)
+    st.write(f"Character count (including spaces): {len(edited_comment)} / {TARGET_CHARS}")
 
-    st.text_area("Generated Comment", comment, height=200)
-    st.write(f"Character count (including spaces): {char_count} / {TARGET_CHARS}")
+    if st.button("Add Comment to Report"):
+        st.session_state['all_comments'].append(f"{name}: {edited_comment}")
+        st.success(f"Comment for {name} added.")
+        st.rerun()
 
-    st.session_state['all_comments'].append(f"{name}: {comment}")
-
-    if st.button("Add Another Comment"):
-        st.experimental_rerun()
-
-# ---------- DOWNLOAD FULL REPORT ----------
-if st.session_state['all_comments']:
-    if st.button("Download Full Report (Word)"):
-        doc = Document()
-        for c in st.session_state['all_comments']:
-            doc.add_paragraph(c)
-        file_name = "English_Report_Comments.docx"
-        doc.save(file_name)
-        with open(file_name, "rb") as f:
-            st.download_button(
-                label="Download Word File",
-                data=f,
-                file_name=file_name,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-
-# ---------- SHOW ALL COMMENTS SO FAR ----------
+# ---------- SHOW ALL COMMENTS ----------
 if st.session_state['all_comments']:
     st.markdown("### All Generated Comments:")
     for c in st.session_state['all_comments']:
         st.write(c)
+
+# ---------- DOWNLOAD FULL REPORT ----------
+if st.session_state['all_comments']:
+    file_stream = io.BytesIO()
+    doc = Document()
+    for c in st.session_state['all_comments']:
+        doc.add_paragraph(c)
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    st.download_button(
+        label="Download Full Report (Word)",
+        data=file_stream,
+        file_name="English_Report_Comments.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
